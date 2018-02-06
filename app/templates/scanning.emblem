@@ -1,0 +1,49 @@
+#scanning.container-main.opacity09.trans-all-05
+	if isPowered
+		container-wrap isFull=true
+			navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+				detail-panel pannelTitle=pannelTitle class="panel-primary"
+					if isConfirming
+						.fix-icon
+							.fix-title 检测到多个申请单允许加油
+							.list-group
+								each instances as |instance|
+									a.list-group-item{action "selInstance" instance}
+										=instance.project.name
+										span.sub-title
+											|[
+											=instance.department.name
+											|]
+										.glyphicon.glyphicon-chevron-right.pull-right
+										span.pull-right.left-icon.text-warning
+											checkbox-list-value content=instance.oils
+							.list-btns
+								button.btn.btn-default.btn-block{action "cancelConfirming"} 取消
+					else
+						.fix-icon
+							if isChecking
+								.glyphicon.glyphicon-transfer.text-warning
+							else
+								.glyphicon.glyphicon-barcode.text-warning
+							.icon-title
+								if errors.check_errors.length
+									.text-danger
+										each errors.check_errors as |error|
+											=error.message
+								else
+									span 请将光标置于方框内同时按住扫码键对准车辆条码
+								.input-border-box
+									.input-group
+										= input type="text" enter="tryGoNext" autofocus='autofocus' value=vinCode class="form-control input-vin" placeholder="将光标置于此方框内按住扫码键对准车辆条码"
+										if vinCode
+											spin-button action="clearError" loadedIcon="glyphicon-remove" isIcon=true isLoading=false disabled=false class="input-group-addin addin-large pull-right is-blank" title="清除"
+
+			= outlet
+	else
+		none-powered action="goBack"
+
+
+
+
+
+

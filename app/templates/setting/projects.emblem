@@ -1,0 +1,9 @@
+if equipment.isXs
+	=partial "setting/navigable-pane-projects"
+	=outlet
+else
+	container-wrap isRight=true
+		=partial "setting/navigable-pane-projects"
+		=outlet
+
+		

@@ -1,0 +1,28 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	list-panel pannelTitle=pannelTitle isMoreButtonNeeded=isMoreButtonNeeded isTopButtonNeeded=isTopButtonNeeded isToShowAll=isToShowAll errors=errors isLeftButtonNeeded=equipment.isXs isRightButtonNeeded=false isFilterButtonNeeded=true isFilterButtonLighted=isFiltered filterText=filterText searchKey=searchKey searchPlaceholder="输入单号搜索" isEnterSearchable=true isSearching=isSearching content=arrangedResult as |item|
+		list-panel-item content=item compareto=selection action="goItem" as |isChecked|
+			if item.is_lost
+				span.text-danger
+					=item.id
+			else
+				=item.id
+			unless equipment.isXs
+				span.split-right |
+				=item.car.number
+				span.sub-title
+					|[
+					substr item.car.vin start=-6
+					|]
+			.glyphicon.glyphicon-chevron-right.pull-right
+			span.pull-right
+				timefmt item.time
+			span.pull-right.split |
+			span class="pull-right text-{{item.rateColor}}"
+				=item.volume
+				|/
+				=item.oil.name
+			unless equipment.isXs
+				span.pull-right.split |
+				span class="pull-right text-{{item.rateColor}}"
+					=item.rate
+				

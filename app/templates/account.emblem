@@ -1,0 +1,25 @@
+=partial "container-side"
+#account.container-main.opacity09.trans-all-05 class="{{if applicationController.isSideActive 'is-folded'}}"
+	container-wrap isBoxShadow=true
+		navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+			.panel.panel-primary
+				.panel-heading.text-center
+					h3.panel-title
+						a.btn-back.pull-left{action "goBack"}  title="返回" href='javascript:void(0)'
+							.glyphicon.glyphicon-arrow-left
+							label.sr-only 返回
+						=pannelTitle
+				.panel-body.panel-scroll
+					.list-group
+						a.list-group-item{action "goAccountInfo"}
+							|账户信息
+							.glyphicon.glyphicon-chevron-right.pull-right
+						a.list-group-item{action "goAccountPwd"}
+							|修改密码
+							.glyphicon.glyphicon-chevron-right.pull-right
+					.btns
+						button.btn.btn-danger.btn-block{action "logout"} 退出系统
+		=outlet
+
+
+

@@ -1,0 +1,10 @@
+span.glyphicon.glyphicon-exclamation-sign aria-hidden="true"
+span.sr-only Error:
+a.btn-clear-error{action "ok"}
+	span.glyphicon.glyphicon-remove.pull-right
+span.alert-content
+	if isCustomized
+		=yield
+	else
+		each model.errors.server_side_error as |error|
+			=error.message

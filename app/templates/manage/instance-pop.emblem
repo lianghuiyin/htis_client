@@ -1,0 +1,32 @@
+
+if isPickingProjectForInstance
+	pick-up-pop isPicking=isPickingProjectForInstance isActive=isPickUpPopActive
+		list-panel pannelTitle="选择项目" leftButtonAction="clearPop" isRightButtonNeeded=false isSearchBoxNeeded=false content=arrangedProjects value=creatingInstance.project as |item value|
+			list-panel-item content=item compareto=value action="setProjectForInstance" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name
+
+if isPickingDepartmentForInstance
+	pick-up-pop isPicking=isPickingDepartmentForInstance isActive=isPickUpPopActive
+		list-panel pannelTitle="选择部门" leftButtonAction="clearPop" isRightButtonNeeded=false isSearchBoxNeeded=false content=arrangedDepartments value=creatingInstance.department as |item value|
+			list-panel-item content=item compareto=value action="setDepartmentForInstance" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name
+
+if isPickingProjectForTrace
+	pick-up-pop isPicking=isPickingProjectForTrace isActive=isPickUpPopActive
+		list-panel pannelTitle="选择项目" leftButtonAction="clearPop" isRightButtonNeeded=false isSearchBoxNeeded=false content=arrangedProjects value=creatingTrace.project as |item value|
+			list-panel-item content=item compareto=value action="setProjectForTrace" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name
+
+if isPickingDepartmentForTrace
+	pick-up-pop isPicking=isPickingDepartmentForTrace isActive=isPickUpPopActive
+		list-panel pannelTitle="选择部门" leftButtonAction="clearPop" isRightButtonNeeded=false isSearchBoxNeeded=false content=arrangedDepartments value=creatingTrace.department as |item value|
+			list-panel-item content=item compareto=value action="setDepartmentForTrace" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name

@@ -1,0 +1,15 @@
+container-wrap isMulti=true isRight=true
+	navigable-pane routeName="manage.unuseds.index" isActive=true
+		.panel
+			.panel-heading.text-center
+				h3.panel-title
+					=title
+			.panel-scroll
+				.fix-icon
+					.glyphicon.glyphicon-file
+					.icon-title
+						span
+							=tooltip
+
+
+

@@ -1,0 +1,46 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	.panel.panel-primary
+		.panel-heading.text-center
+			h3.panel-title
+				a.btn-back.pull-left{action "goBack"}  title="返回" href='javascript:void(0)'
+					.glyphicon.glyphicon-arrow-left
+					label.sr-only 返回
+				=pannelTitle
+		.panel-body.panel-scroll
+			ul.list-group.form-horizontal
+				li class="list-group-item form-group has-feedback {{if model.errors.old_password.length 'has-error'}}"
+					label.control-label.col-md-2.col-sm-12 for="old_password" 旧密码
+					.col-md-8.col-sm-12
+						=input id="old_password" type="password" class="form-control" value=model.old_password placeholder="请输入旧密码"
+						if model.errors.old_password
+							span.glyphicon.glyphicon-remove.form-control-feedback
+						each model.errors.old_password as |error|
+							.help-block.text-danger
+								=error.message
+				li class="list-group-item form-group has-feedback {{if model.errors.new_password.length 'has-error'}}"
+					label.control-label.col-md-2.col-sm-12 for="new_password" 新密码
+					.col-md-8.col-sm-12
+						=input id="new_password" type="password" class="form-control" value=model.new_password placeholder="请输入新密码"
+						if model.errors.new_password
+							span.glyphicon.glyphicon-remove.form-control-feedback
+						each model.errors.new_password as |error|
+							.help-block.text-danger
+								=error.message
+				li class="list-group-item form-group has-feedback {{if model.errors.confirm_password.length 'has-error'}}"
+					label.control-label.col-md-2.col-sm-12 for="confirm_password" 确认密码
+					.col-md-8.col-sm-12
+						=input id="confirm_password" type="password" class="form-control" value=model.confirm_password placeholder="请输入新密码"
+						if model.errors.confirm_password
+							span.glyphicon.glyphicon-remove.form-control-feedback
+						each model.errors.confirm_password as |error|
+							.help-block.text-danger
+								=error.message
+
+			div
+				each model.errors.server_side_error as |error|
+					.help-block.text-center.text-danger
+						=error.message
+				spin-button action="save" isLoading=isSaving disabled=isUnSavable class="btn btn-info btn-block" title="保存"
+
+
+=outlet

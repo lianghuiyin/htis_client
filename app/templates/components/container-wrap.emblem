@@ -1,0 +1,2 @@
+div class="navigable-container {{if isBoxShadow 'box-shadow'}}"
+	=yield

@@ -1,0 +1,16 @@
+if isPickingCustomizedMsg
+	pick-up-pop isPicking=isPickingCustomizedMsg isActive=isPickUpPopActive isAlert=true 
+		alert-error isCustomized=true action="clearPop"
+			=customizedMsg
+			
+if isPickingError
+	pick-up-pop isPicking=isPickingError isActive=isPickUpPopActive isAlert=true 
+		alert-error model=model action="clearError"
+
+if isConfirmingCancel
+	pick-up-pop isPicking=isConfirmingCancel isActive=isPickUpPopActive isAlert=true
+		alert-warning message=confirmingCancelMsg action="doCancel"
+
+if isConfirmingDelete
+	pick-up-pop isPicking=isConfirmingDelete isActive=isPickUpPopActive isAlert=true
+		alert-warning message="删除操作不可撤销，确定要删除吗？" action="doDelete"

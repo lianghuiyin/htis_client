@@ -1,0 +1,8 @@
+span.glyphicon.glyphicon-warning-sign aria-hidden="true"
+span.sr-only Warning:
+a.btn-cancel.pull-right{action "cancel"}
+	span.glyphicon.glyphicon-remove
+a.btn-ok.pull-right.margin-right{action "ok"}
+	span.glyphicon.glyphicon-ok
+span.alert-content
+	=message

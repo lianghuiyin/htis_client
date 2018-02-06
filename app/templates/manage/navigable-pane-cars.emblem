@@ -1,0 +1,15 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	list-panel pannelTitle=pannelTitle isMoreButtonNeeded=isMoreButtonNeeded isTopButtonNeeded=isTopButtonNeeded isToShowAll=isToShowAll isEnterSearchable=isEnterSearchable isEnterLighted=isSearchkeyEntered isSearching=isSearching errors=errors isLeftButtonNeeded=equipment.isXs isRightButtonNeeded=sessionController.isCarManagePowered isFilterButtonNeeded=true filterButtonIcon="glyphicon-star" filterButtonTitle="与我相关" isFilterButtonLighted=isFiltered  searchKey=searchKey searchPlaceholder="输入编号、VIN码或车型搜索" content=arrangedResult as |item|
+		list-panel-item content=item compareto=selection action="goItem" as |isChecked|
+			=item.number
+			.glyphicon.glyphicon-chevron-right.pull-right
+			if item.instances.length
+				.badge.pull-right
+					=item.instances.length
+			if item.is_archived
+				span.pull-right.glyphicon.glyphicon-cloud.left-icon.text-muted title="已结束/归档"
+			else if item.isFinished
+				span.pull-right.glyphicon.glyphicon-cloud-upload.left-icon.text-danger title="已过期"
+			else if item.isFinishing
+				span.pull-right.glyphicon.glyphicon-cloud-upload.left-icon.text-warning title="近期将过期"
+

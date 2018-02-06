@@ -1,0 +1,9 @@
+.startup.loading
+	|启动中...
+	each errors.server_side_error as |error|
+		.help-block.text-danger
+			error.message
+	if errors.length
+		div
+			button.btn.btn-primary{action 'retry'} 再试一次
+= outlet

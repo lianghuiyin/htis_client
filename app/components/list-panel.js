@@ -1,0 +1,56 @@
+import Ember from 'ember';
+
+export default Ember.Component.extend({
+    classNames: ['list-panel','panel'],
+    content:null,
+    value:null,
+    pannelTitle:"标题",
+    isLeftButtonNeeded:true,
+    leftButtonTitle:"返回",
+    leftButtonIcon:"glyphicon-arrow-left",
+    leftButtonAction:"goBack",
+    isRightButtonNeeded:true,
+    rightButtonTitle:"新建",
+    rightButtonIcon:"glyphicon-plus",
+    rightButtonAction:"goNew",
+    isFilterButtonNeeded:false,
+    isFilterButtonLighted:false,
+    filterButtonTitle:"筛选",
+    filterButtonIcon:"glyphicon-filter",
+    filterButtonAction:"filter",
+    filterText:"",
+    isSearchBoxNeeded:true,
+    searchPlaceholder:"输入名称搜索",
+    searchKey:"",
+    isSearching:false,
+    isMoreButtonNeeded:false,
+    isTopButtonNeeded:false,
+    isToShowAll:false,
+    fetchNextButtonAction:"fetchNext",
+    isEnterSearchable:false,
+    isEnterLighted:false,
+    enterSearchAction:"enterSearch",
+    errors:null,
+	actions:{
+        leftAction(){
+	        this.sendAction('leftButtonAction');
+        },
+        rightAction(){
+	        this.sendAction('rightButtonAction');
+        },
+        filterAction(){
+            this.sendAction('filterButtonAction');
+        },
+        fetchNextAction(){
+            this.sendAction('fetchNextButtonAction');
+        },
+        toggleToShowAll(){
+            this.toggleProperty("isToShowAll");
+        },
+        enterSearchAction(){
+            if(this.get("isEnterSearchable")){
+                this.sendAction('enterSearchAction',this.get("searchKey"));
+            }
+        }
+	}
+});

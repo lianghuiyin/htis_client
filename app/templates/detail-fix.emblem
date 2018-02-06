@@ -1,0 +1,20 @@
+li.list-group-item.form-group.has-feedback
+	label.control-label.col-md-2.col-sm-12 for="creater" 创建人
+	.col-md-8.col-sm-12
+		p.form-control-static
+			=model.creater.name
+li.list-group-item.form-group.has-feedback
+	label.control-label.col-md-2.col-sm-12 for="created_date" 创建时间
+	.col-md-8.col-sm-12
+		p.form-control-static
+			timefmt model.created_date
+li.list-group-item.form-group.has-feedback
+	label.control-label.col-md-2.col-sm-12 for="modifier" 修改人
+	.col-md-8.col-sm-12
+		p.form-control-static
+			=model.modifier.name
+li.list-group-item.form-group.has-feedback
+	label.control-label.col-md-2.col-sm-12 for="created_date" 修改时间
+	.col-md-8.col-sm-12
+		p.form-control-static
+			timefmt model.modified_date

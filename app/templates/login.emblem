@@ -1,0 +1,31 @@
+=partial "container-side"
+#login.container-main.opacity09.trans-all-05 class="{{if applicationController.isSideActive 'is-folded'}}"
+	.navigable-container
+		.signin-wrap
+			.form-signin role="form"
+				h2.form-signin-heading 
+					span.visible-xs-inline
+						=applicationController.appShortTitle
+					span.hidden-xs
+						=applicationController.appTitle
+				.form-group
+					label.sr-only for="log_name" 用户
+					= input id="log_name" type="text" class="form-control" placeholder="手机号或邮箱地址" value=model.log_name
+				div class="form-group {{if model.errors.messages.length 'has-error has-feedback'}}"
+					.input-group
+						label.sr-only for="log_password" 密码
+						= input id="log_password" type="password" enter="go" value=model.log_password class="form-control" placeholder="密码"
+						if model.errors.messages.length
+							span.glyphicon.glyphicon-remove.form-control-feedback
+						if model.log_password
+							spin-button action="go" isIcon=true isLoading=model.isSaving disabled=model.isUnSavable class="input-group-addin addin-large pull-right is-blank" title="登录"
+
+						each model.errors.server_side_error as |error|
+							.help-block.text-danger
+								=error.message
+
+	= outlet
+
+
+
+

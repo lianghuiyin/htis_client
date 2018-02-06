@@ -1,0 +1,128 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	standard-detail-panel model=model pannelTitle=pannelTitle isEditing=isEditing isLeftButtonNeeded=true
+		ul.list-group.list-full.form-horizontal
+			li class="list-group-item form-group has-feedback {{if model.errors.name.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="name" 名称
+				.col-md-8.col-sm-12
+					if isEditing
+						=input id="name" type="text" class="form-control" value=model.name
+						if model.errors.name
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.name
+					each model.errors.name as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group has-feedback {{if model.errors.phone.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="phone" 手机号
+				.col-md-8.col-sm-12
+					if isEditing
+						=input id="phone" type="tel" class="form-control" value=model.phone
+						if model.errors.phone
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.phone
+					each model.errors.phone as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group has-feedback {{if model.errors.email.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="email" 邮箱
+				.col-md-8.col-sm-12
+					if isEditing
+						=input id="email" type="text" class="form-control" value=model.email
+						if model.errors.email
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.email
+					each model.errors.email as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group has-feedback {{if model.errors.role.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="role" 角色
+				.col-md-8.col-sm-12
+					if isEditing
+						pick-up id="role" class="form-control" value=model.role.name isPicking=isPicking
+						if model.errors.role
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.role.name
+					each model.errors.role as |error|
+						.help-block.text-danger
+							=error.message
+			if model.isBillScannerPowered
+				li class="list-group-item form-group has-feedback"
+					label.control-label.col-md-2.col-sm-12 for="is_sign_needed" 加油签字
+					.col-md-8.col-sm-12
+						radio-list content=isSignNeededList value=model.is_sign_needed contentValueKey="value" isEditing=isEditing as |item value|
+							if isEditing
+								radio-list-item content=item contentValueKey="value" compareto=value action="setIsSignNeeded" as |isChecked|
+									if isChecked
+										span.text-success
+											span.glyphicon.glyphicon-ok
+											=item.name
+									else
+										span.text-muted
+											=item.name
+							else
+								if item.value
+									span.text-success
+										=item.name
+								else
+									span.text-danger
+										=item.name
+			unless model.isNew
+				li class="list-group-item form-group has-feedback"
+					label.control-label.col-md-2.col-sm-12 for="is_enable" 状态
+					.col-md-8.col-sm-12
+						radio-list content=enableList value=model.is_enable contentValueKey="value" isEditing=isEditing as |item value|
+							if isEditing
+								radio-list-item content=item contentValueKey="value" compareto=value action="setIsEnable" as |isChecked|
+									if isChecked
+										span.text-success
+											span.glyphicon.glyphicon-ok
+											=item.name
+									else
+										span.text-muted
+											=item.name
+							else
+								if item.value
+									span.text-success
+										=item.name
+								else
+									span.text-danger
+										=item.name
+			li class="list-group-item form-group has-feedback {{if model.errors.signature.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="signature" 个性签名
+				.col-md-8.col-sm-12
+					if isEditing
+						=textarea id="signature" type="text" rows="4" class="form-control" value=model.signature placeholder="请输入个性签名"
+						if model.errors.signature
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.signature
+					each model.errors.signature as |error|
+						.help-block.text-danger
+							=error.message
+			if isNeedToShowFix
+				=partial "detail-fix"
+		unless isEditing
+			ul.list-group.list-full
+				button.btn.btn-info.btn-block{action 'goResetpwd'} 重置密码
+
+if isPicking
+	pick-up-pop isPicking=isPicking isActive=isPickUpPopActive
+		list-panel pannelTitle="选择角色" leftButtonAction="clearPop" isRightButtonNeeded=false isSearchBoxNeeded=false content=roles value=model.role as |item value|
+			list-panel-item content=item compareto=value action="setRole" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name
+
+=partial "common-alert"
+
+
+=outlet

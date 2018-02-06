@@ -1,0 +1,9 @@
+if equipment.isXs
+	=partial "history/navigable-pane-reports"
+	=outlet
+else
+	container-wrap isRight=true class="print-content"
+		=partial "history/navigable-pane-reports"
+		=outlet
+
+		

@@ -1,0 +1,55 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	standard-detail-panel model=model pannelTitle=pannelTitle isEditing=isEditing isLeftButtonNeeded=true
+		ul.list-group.list-full.form-horizontal
+			li class="list-group-item form-group has-feedback {{if model.errors.name.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="name" 名称
+				.col-md-8.col-sm-12
+					if isEditing
+						=input id="name" type="text" class="form-control" value=model.name
+						if model.errors.name
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.name
+					each model.errors.name as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group has-feedback"
+				label.control-label.col-md-2.col-sm-12 for="is_enable" 状态
+				.col-md-8.col-sm-12
+					radio-list content=enableList value=model.is_enable contentValueKey="value" isEditing=isEditing as |item value|
+						if isEditing
+							radio-list-item content=item contentValueKey="value" compareto=value action="setIsEnable" as |isChecked|
+								if isChecked
+									span.text-success
+										span.glyphicon.glyphicon-ok
+										=item.name
+								else
+									span.text-muted
+										=item.name
+						else
+							if item.value
+								span.text-success
+									=item.name
+							else
+								span.text-danger
+									=item.name
+			li class="list-group-item form-group has-feedback {{if model.errors.description.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="description" 备注
+				.col-md-8.col-sm-12
+					if isEditing
+						=textarea id="description" type="text" rows="4" class="form-control" value=model.description placeholder="请输入描述信息"
+						if model.errors.description
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.description
+					each model.errors.description as |error|
+						.help-block.text-danger
+							=error.message
+			if isNeedToShowFix
+				=partial "detail-fix"
+
+=partial "common-alert"
+
+=outlet

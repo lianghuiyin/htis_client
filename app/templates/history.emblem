@@ -1,0 +1,42 @@
+=partial "container-side"
+#history.container-main.opacity09.trans-all-05 class="{{if applicationController.isSideActive 'is-folded'}}"
+	if isPowered
+		container-wrap isLeft=equipment.isNotXs class="container-history"
+			navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+				.panel
+					.panel-heading.text-center
+						h3.panel-title
+							a.btn-home.pull-left{action "goHome"}  title="返回" href='javascript:void(0)'
+								.glyphicon.glyphicon-home
+								label.sr-only 返回
+							a.btn-bell.pull-right{action "goBell"}  title="通知中心" href='javascript:void(0)'
+								.bell-count
+									=messagesController.model.length
+								.glyphicon.glyphicon-bell
+								label.sr-only 通知中心
+							=pannelTitle
+					.panel-scroll
+						.list-group.list-full
+							a{action "goBills"} class="list-group-item {{if isBills 'active'}}"
+								span.title 明细
+								span.glyphicon.glyphicon-book.pull-left
+								if isBills
+									span.glyphicon.glyphicon-bookmark.pull-right
+							a{action "goReports"} class="list-group-item {{if isReports 'active'}}"
+								span.title 报表
+								span.glyphicon.glyphicon-book.pull-left
+								if isReports
+									span.glyphicon.glyphicon-bookmark.pull-right
+			if equipment.isXs
+				=outlet
+		if equipment.isNotXs
+			=outlet
+	else
+		none-powered action="goHome"
+
+
+
+
+
+
+

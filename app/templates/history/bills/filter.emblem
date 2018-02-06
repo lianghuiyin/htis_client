@@ -1,0 +1,80 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	.panel
+		.panel-heading.text-center
+			h3.panel-title
+				a.btn-back.pull-left{action "goBack"}  title="返回" href='javascript:void(0)'
+					.glyphicon.glyphicon-arrow-left
+					label.sr-only 返回
+				=pannelTitle
+		.panel-scroll
+			ul.list-group.list-full.form-horizontal
+				li class="list-group-item form-group has-feedback"
+					label.control-label.col-md-2.col-sm-12 for="project" 所属项目
+					.col-md-10.col-sm-12
+						pick-up id="project" class="form-control" value=project.name isPicking=isPickingProject
+				li class="list-group-item form-group has-feedback"
+					label.control-label.col-md-2.col-sm-12 for="department" 使用部门
+					.col-md-10.col-sm-12
+						pick-up id="department" class="form-control" value=department.name isPicking=isPickingDepartment
+				li class="list-group-item form-group has-feedback"
+					label.control-label.col-md-2.col-sm-12 for="startEndDate" 起止时间
+					.col-md-10.col-sm-12
+						date-picker-value id="startEndDate" startDate=startDate endDate=endDate
+						date-picker startDate=startDate endDate=endDate isResetNeeded=isTimeResetNeeded
+			if isConfirmingExport
+				.list-group.list-full
+					.list-group-item.list-full
+						.alert.alert-warning
+							if isExporting
+								.progress
+								  .progress-bar.progress-bar-success role="progressbar" aria-valuenow="{{downloadedPercent}}" aria-valuemin="0" aria-valuemax="100" style="width: {{downloadedPercent}}%"
+								    span.sr-only 
+								    	=downloadedPercent
+								    	|% Complete
+							else
+								.help-block.text-warning.text-center 
+									|搜索到
+									=totalLength
+									|个加油单，确定要导出吗？
+							if errors.server_side_error
+								alert-error isCustomized=true action="clearError"
+									each errors.server_side_error as |error|
+										=error.message
+							spin-button action="export" isLoading=isExporting isDisabled=isExporting class="btn btn-danger btn-block" title="确定"
+							button.btn.btn-default.btn-block{action "cancelExport"} 
+								span 取消
+			else
+				.list-group.list-full
+					each errors.server_side_error as |error|
+						.help-block.text-danger.text-center
+							=error.message
+					unless isFetchingCountForExport
+						spin-button action="search" isLoading=isSearching isDisabled=isSearching class="btn btn-info btn-block" title="开始搜索"
+						unless isSearching
+							spin-button action="reset" isLoading=false isDisabled=false class="btn btn-default btn-block" title="重置"
+				unless equipment.isXs
+					unless isSearching
+						.list-group.list-full
+							spin-button action="goExport" isLoading=isFetchingCountForExport isDisabled=isFetchingCountForExport class="btn btn-warning btn-block" title="导出为EXCEL"
+
+
+
+if isPickingProject
+	pick-up-pop isPicking=isPickingProject isActive=isPickUpPopActive
+		list-panel pannelTitle="选择项目" leftButtonAction="clearPop" rightButtonAction="setProject" rightButtonIcon='glyphicon-ban-circle' isSearchBoxNeeded=false content=arrangedProjects value=project as |item value|
+			list-panel-item content=item compareto=value action="setProject" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name
+
+if isPickingDepartment
+	pick-up-pop isPicking=isPickingDepartment isActive=isPickUpPopActive
+		list-panel pannelTitle="选择部门" leftButtonAction="clearPop" rightButtonAction="setDepartment" rightButtonIcon='glyphicon-ban-circle' isSearchBoxNeeded=false content=arrangedDepartments value=department as |item value|
+			list-panel-item content=item compareto=value action="setDepartment" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name
+
+
+
+

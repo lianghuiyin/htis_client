@@ -1,0 +1,9 @@
+if equipment.isXs
+	=partial "history/navigable-pane-bills"
+	=outlet
+else
+	container-wrap isRight=true
+		=partial "history/navigable-pane-bills"
+		=outlet
+
+		

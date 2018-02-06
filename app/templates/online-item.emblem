@@ -1,0 +1,2 @@
+.bill-item class="{{if bill.is_printed 'text-success'}}"
+	print-bill bill applicationController.firmName applicationController.appShortTitle

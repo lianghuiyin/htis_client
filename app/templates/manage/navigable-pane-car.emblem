@@ -1,0 +1,161 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	standard-detail-panel model=model pannelTitle=model.number isEditing=isEditing isLeftButtonNeeded=equipment.isXs isRightButtonNeeded=sessionController.isCarManagePowered
+		unless isEditing
+			.list-group.list-full.is-child-node-title
+				fold-button class="list-group-item" isFolded=isBaseFolded as |isFolded|
+					|基本信息
+		unless isBaseFolded
+			if isCarArchiving
+				.list-group
+					.alert.alert-warning
+						.help-block.text-warning.text-center 
+							|闲置后该车辆将不可见，您可以在已闲置列表中找回该车辆，确定要继续吗？
+						if archivingCar.errors.server_side_error
+							alert-error model=archivingCar action="clearError"
+						spin-button action="saveArchivingCar" isLoading=archivingCar.isSaving isDisabled=archivingCar.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+						button.btn.btn-default.btn-sm.btn-block{action "goBack"} 
+							span 取消
+			else
+				if isCarRestoring
+					.list-group
+						.alert.alert-warning
+							.help-block.text-warning.text-center 
+								|还原后该车辆将重新可用，您可以在待处理列表中找到该车辆，确定要继续吗？
+							if restoringCar.errors.server_side_error
+								alert-error model=restoringCar action="clearError"
+							spin-button action="saveRestoringCar" isLoading=restoringCar.isSaving isDisabled=restoringCar.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+							button.btn.btn-default.btn-sm.btn-block{action "goBack"} 
+								span 取消
+				else
+					ul.list-group.list-full.form-horizontal
+						unless model.isNew
+							li class="list-group-item form-group has-feedback"
+								label.control-label.col-md-2.col-sm-12 for="number" 系统编号
+								.col-md-10.col-sm-12
+									p.form-control-static
+										=model.id
+						li class="list-group-item form-group has-feedback {{if model.errors.number.length 'has-error'}}"
+							label.control-label.col-md-2.col-sm-12 for="number" 内部编号
+							.col-md-10.col-sm-12
+								if isEditing
+									=input id="number" type="text" class="form-control" value=model.number
+									if model.errors.number
+										span.glyphicon.glyphicon-remove.form-control-feedback
+								else
+									p.form-control-static
+										=model.number
+								each model.errors.number as |error|
+									.help-block.text-danger
+										=error.message
+						li class="list-group-item form-group has-feedback {{if model.errors.vin.length 'has-error'}}"
+							label.control-label.col-md-2.col-sm-12 for="vin" VIN
+							.col-md-10.col-sm-12
+								if isEditing
+									=input id="vin" type="text" class="form-control" value=model.vin
+									if model.errors.vin
+										span.glyphicon.glyphicon-remove.form-control-feedback
+								else
+									p.form-control-static
+										=model.vin
+								each model.errors.vin as |error|
+									.help-block.text-danger
+										=error.message
+						li class="list-group-item form-group has-feedback {{if model.errors.model.length 'has-error'}}"
+							label.control-label.col-md-2.col-sm-12 for="model" 车型
+							.col-md-10.col-sm-12
+								if isEditing
+									=input id="model" type="text" class="form-control" value=model.model
+									if model.errors.model
+										span.glyphicon.glyphicon-remove.form-control-feedback
+								else
+									p.form-control-static
+										=model.model
+								each model.errors.model as |error|
+									.help-block.text-danger
+										=error.message
+						li class="list-group-item form-group has-feedback"
+							label.control-label.col-md-2.col-sm-12 for="instance_count" 申请单
+							.col-md-10.col-sm-12
+								p.form-control-static
+									|该车辆目前有
+									=model.instance_count
+									|个申请单
+						li class="list-group-item form-group has-feedback"
+							label.control-label.col-md-2.col-sm-12 for="bill_count" 加油单
+							.col-md-10.col-sm-12
+								p.form-control-static
+									|该车辆目前有
+									=model.bill_count
+									|个加油单
+						li class="list-group-item form-group has-feedback"
+							label.control-label.col-md-2.col-sm-12 for="last_mileage" 里程
+							.col-md-10.col-sm-12
+								p.form-control-static
+									if model.last_mileage
+										=model.last_mileage
+									else
+										|无
+						li class="list-group-item form-group has-feedback"
+							label.control-label.col-md-2.col-sm-12 for="last_volume" 最近加油
+							.col-md-10.col-sm-12
+								p.form-control-static
+									if model.last_volume
+										=model.last_volume
+										|[
+										=model.last_oil.name
+										|]
+									else
+										|无
+						li class="list-group-item form-group has-feedback"
+							label.control-label.col-md-2.col-sm-12 for="last_rate" 最近油耗
+							.col-md-10.col-sm-12
+								p.form-control-static
+									if model.last_rate
+										span class="text-{{model.rateColor}}"
+											=model.last_rate
+									else
+										|无
+						li class="list-group-item form-group has-feedback {{if model.errors.description.length 'has-error'}}"
+							label.control-label.col-md-2.col-sm-12 for="description" 备注
+							.col-md-10.col-sm-12
+								if isEditing
+									=textarea id="description" type="text" rows="4" class="form-control" value=model.description placeholder="请输入备注"
+									if model.errors.description
+										span.glyphicon.glyphicon-remove.form-control-feedback
+								else
+									p.form-control-static
+										=model.description
+								each model.errors.description as |error|
+									.help-block.text-danger
+										=error.message
+						if isNeedToShowFix
+							=partial "detail-fix"
+					if isChecker
+						if model.is_archived
+							.list-group.list-full
+								.alert.alert-warning.text-center 
+									span.glyphicon.glyphicon-cloud.left-icon
+									span 该车辆已闲置
+					else
+						if model.isArchivable
+							.list-group.list-full
+								button.btn.btn-info.btn-block{action "goCarArchive"} 闲置
+						else
+							if model.is_archived
+								.list-group.list-full
+									button.btn.btn-warning.btn-block{action "goCarRestore"} 该车辆已闲置，点击可还原
+		
+		unless isEditing
+			.list-group.list-full.is-child-node-title
+				.list-group-item
+					fold-button class="link-default" isFolded=isInstancesFolded as |isFolded|
+						|申请单
+					a.pull-right.link-default{action "toggleCloudList"}
+						span.glyphicon.glyphicon-cloud class="{{if isCloudList 'text-warning'}}" title="显示已结束申请单"
+			unless isInstancesFolded
+				=partial "manage/instance-list"
+	
+
+=partial "manage/instance-pop"
+=partial "common-alert"
+

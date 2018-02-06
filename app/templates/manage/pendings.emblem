@@ -1,0 +1,7 @@
+if equipment.isXs
+	=partial "manage/navigable-pane-cars"
+	=outlet
+else
+	container-wrap isCenter=true
+		=partial "manage/navigable-pane-cars"
+	=outlet

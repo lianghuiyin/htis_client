@@ -1,0 +1,15 @@
+.panel-heading.text-center
+	h3.panel-title
+		if isLeftButtonNeeded
+			a.btn-back.pull-left{action "leftAction"}  title=leftButtonTitle href='javascript:void(0)'
+				div class="glyphicon {{leftButtonIcon}}"
+				label.sr-only 
+					=leftButtonTitle
+		if isRightButtonNeeded
+			a.btn-new.pull-right{action "rightAction"}  title=rightButtonTitle href='javascript:void(0)'
+				div class="glyphicon {{rightButtonIcon}}"
+				label.sr-only
+					=rightButtonTitle
+		=pannelTitle
+.panel-scroll
+	=yield

@@ -1,0 +1,113 @@
+=partial "container-side"
+#home.container-main.trans-all-05 class="{{if applicationController.isSideActive 'is-folded'}}"
+	.navbar.navbar-static-top
+		div
+			.pull-left
+				a.navbar-brand{action "goAccount"}
+					.glyphicon.glyphicon-user
+					=sessionController.user.name
+		ul.nav.pull-right
+			if isOptimizable
+				li.pull-left.optimizer-box
+					a.btn-top-icon{action 'oneTouchOptimize'} title="一键优化" class="{{if isOptimized 'text-muted'}}"
+						if isOptimizing
+							spin-space
+						else
+							span.glyphicon.glyphicon-plane
+							label.sr-only 一键优化
+							.badge
+								=carsCount
+					.tooltip.bottom.fade.in role="tooltip"
+						.tooltip-arrow
+						.tooltip-inner
+							=optimizerHelpInfo
+							if isOptimizing
+								.text-center.text-warning
+									|Loading...
+							else
+								.text-success
+									=optimizedMessage
+
+							
+							each errors.server_side_error as |error|
+								.help-block.text-danger.text-center
+									=error.message
+			li.pull-left
+				a.btn-top-icon{action 'goBell'} title="通知中心"
+					span.glyphicon.glyphicon-bell
+					label.sr-only 通知中心
+					.badge
+						=messagesController.model.length
+			/ li.pull-left
+			/ 	a{action 'goValids'} title="大屏展示"
+			/ 		span.glyphicon.glyphicon-th-large
+			/ 		label.sr-only 大屏展示
+			li.pull-left
+				a.btn-top-icon{action 'goShortcut'} title="快捷打印"
+					span.glyphicon.glyphicon-camera
+					label.sr-only 快捷打印
+			li.pull-left
+				a.btn-top-icon{action 'goOnline'} title="打印同步"
+					span.glyphicon.glyphicon-facetime-video
+					label.sr-only 打印同步
+
+	.container-fluid.option-box
+		.row
+			.col-sm-6.option-item
+				div.option-wrap{action 'goManage'} class="{{unless sessionController.isManagePowered 'disabled'}}" title='加油管理'
+					span.t-shadow.glyphicon.glyphicon-scale
+					div.option-title 加油管理
+			.col-sm-6.option-item
+				div.option-wrap{action 'goSetting'} class="{{unless sessionController.isSystemPowered 'disabled'}}" title='系统设置'
+					span.t-shadow.glyphicon.glyphicon-wrench
+					div.option-title 系统设置
+	container-wrap isFolded=isFolded isBoxShadow=true
+		navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+			.panel.panel-primary
+				.panel-heading.text-center
+					h3.panel-title
+						a.btn-fold.pull-left{action "fold"}  title="折叠选项" href='javascript:void(0)'
+							.glyphicon.glyphicon-menu-hamburger
+							label.sr-only 折叠选项
+						=pannelTitle
+						a.btn-more.pull-right{action "goHistory"} title="更多加油单"
+							.glyphicon.glyphicon-cloud
+							label.sr-only 更多加油单
+				div class="panel-scroll {{if isScanner 'is-scanner'}}"
+					.list-group.list-full
+						if arrangedResult
+							each arrangedResult as |bill|
+								a.list-group-item{action "goBill" bill}
+									if bill.car 
+										=bill.car.number
+									else
+										span.glyphicon.glyphicon-question-sign.text-muted
+									/ span.sub-title
+									/ 	|[
+									/ 	=bill.driver_name
+									/ 	|]
+									.glyphicon.glyphicon-chevron-right.pull-right
+									span class="pull-right text-{{bill.rateColor}}"
+										bill.rate
+										||
+										=bill.volume
+										|/
+										=bill.oil.name
+						else
+							.empty-box
+								.glyphicon.glyphicon-road
+								.empty-title 没有找到加油单
+				if isScanner
+					.panel-footer
+						.tooltip.left.fade.in role="tooltip"
+							.tooltip-arrow
+							.tooltip-inner
+								|点击开始扫码加油
+						a.btn-scan{action "goScanning"} title="扫码加油"
+							span.glyphicon.glyphicon-screenshot
+							label.sr-only 扫码加油
+		=outlet
+
+
+
+

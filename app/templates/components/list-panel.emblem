@@ -1,0 +1,53 @@
+.panel-heading.text-center
+	h3.panel-title
+		if isLeftButtonNeeded
+			a.pull-left{action "leftAction"}  title=leftButtonTitle href='javascript:void(0)'
+				div class="glyphicon {{leftButtonIcon}}"
+				label.sr-only 
+					=leftButtonTitle
+		if isRightButtonNeeded
+			a.pull-right{action "rightAction"}  title=rightButtonTitle href='javascript:void(0)'
+				div class="glyphicon {{rightButtonIcon}}"
+				label.sr-only
+					=rightButtonTitle
+		=pannelTitle
+if isSearchBoxNeeded
+	.input-group.search-box
+		=input value=searchKey enter="enterSearchAction" class="ember-text-field form-control input-round input-addin-left" placeholder=searchPlaceholder type="text"
+		span.input-group-addin.addin-round.pull-left
+			if isSearching
+				span.glyphicon.glyphicon-hourglass class="{{if isEnterLighted 'text-danger'}}"
+			else
+				span.glyphicon.glyphicon-search class="{{if isEnterLighted 'text-danger'}}"
+		if isFilterButtonNeeded
+			a.input-group-addin.addin-round.pull-right{action "filterAction"} title=filterButtonTitle
+				if filterText
+					span class="text-warning" {{filterText}}
+				span class="glyphicon {{filterButtonIcon}} {{if isFilterButtonLighted 'text-warning'}}"
+div class="panel-scroll {{if isSearchBoxNeeded 'top-search'}}"
+	.list-group.list-full
+		if content
+			each content as |item|
+				=yield item value
+		else
+			unless isSearching
+				.empty-box
+					.glyphicon.glyphicon-road
+					.empty-title 没有找到数据
+		each errors.server_side_error as |error|
+			.help-block.text-danger.text-center
+				=error.message
+		if isSearching
+			.empty-box
+				.glyphicon.glyphicon-hourglass
+				.empty-title Loading...
+		else
+			if isTopButtonNeeded
+				button{action "toggleToShowAll"} type="button" class="btn btn-default btn-xs btn-block" title="切换全部显示"
+					span class="glyphicon {{if isToShowAll 'glyphicon-chevron-up' 'glyphicon-chevron-down'}}"
+			if isMoreButtonNeeded
+				spin-button action="fetchNextAction" isIcon=true loadedIcon="glyphicon-chevron-down" isLoading=isSearching isDisabled=isSearching class="btn btn-info btn-xs btn-block" title="更多"
+
+
+
+

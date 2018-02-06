@@ -1,0 +1,90 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	.panel.panel-primary
+		.panel-heading.text-center
+			h3.panel-title
+				a.btn-back.pull-left{action "goBack"}  title="返回" href='javascript:void(0)'
+					.glyphicon.glyphicon-arrow-left
+					label.sr-only 返回
+				=pannelTitle
+		.panel-body.panel-scroll
+			ul.list-group.form-horizontal
+				li class="list-group-item form-group has-feedback {{if model.errors.name.length 'has-error'}}"
+					label.control-label.col-md-2.col-sm-12 for="name" 姓名
+					.col-md-8.col-sm-12
+						if isEditing
+							=input id="name" type="text" class="form-control" value=model.name placeholder="请输入真实姓名"
+							if model.errors.name
+								span.glyphicon.glyphicon-remove.form-control-feedback
+						else
+							p.form-control-static
+								=model.name
+						each model.errors.name as |error|
+							.help-block.text-danger
+								=error.message
+				li class="list-group-item form-group has-feedback {{if model.errors.phone.length 'has-error'}}"
+					label.control-label.col-md-2.col-sm-12 for="phone" 手机号
+					.col-md-8.col-sm-12
+						if isEditing
+							=input id="phone" type="tel" class="form-control" value=model.phone placeholder="请输入手机号码"
+							if model.errors.phone
+								span.glyphicon.glyphicon-remove.form-control-feedback
+						else
+							p.form-control-static
+								=model.phone
+						each model.errors.phone as |error|
+							.help-block.text-danger
+								=error.message
+				li class="list-group-item form-group has-feedback {{if model.errors.email.length 'has-error'}}"
+					label.control-label.col-md-2.col-sm-12 for="email" 邮箱
+					.col-md-8.col-sm-12
+						if isEditing
+							=input id="email" type="text" class="form-control" value=model.email placeholder="请输入邮箱"
+							if model.errors.email
+								span.glyphicon.glyphicon-remove.form-control-feedback
+						else
+							p.form-control-static
+								=model.email
+						each model.errors.email as |error|
+							.help-block.text-danger
+								=error.message
+				li class="list-group-item form-group has-feedback"
+					label.control-label.col-md-2.col-sm-12 for="role" 所属角色
+					.col-md-8.col-sm-12
+						p.form-control-static
+							=model.role.name
+				if model.isBillScannerPowered
+					li class="list-group-item form-group has-feedback"
+						label.control-label.col-md-2.col-sm-12 for="is_sign_needed" 加油签字
+						.col-md-8.col-sm-12
+							if model.is_sign_needed
+								span.text-success 需要签字
+							else
+								span.text-danger 不需要签字
+				li class="list-group-item form-group has-feedback {{if model.errors.signature.length 'has-error'}}"
+					label.control-label.col-md-2.col-sm-12 for="signature" 个性签名
+					.col-md-8.col-sm-12
+						if isEditing
+							=textarea id="signature" type="text" rows="4" class="form-control" value=model.signature placeholder="请输入个性签名"
+							if model.errors.signature
+								span.glyphicon.glyphicon-remove.form-control-feedback
+						else
+							p.form-control-static
+								=model.signature
+						each model.errors.signature as |error|
+							.help-block.text-danger
+								=error.message
+
+			div
+				if model.errors.messages
+					each model.errors.server_side_error as |error|
+						.help-block.text-center.text-danger
+							=error.message
+				if isEditing
+					spin-button action="save" isLoading=model.isSaving isDisabled=model.isUnSavable class="btn btn-info btn-block" title="保存"
+					button{action "cancel"} type="button" class="btn btn-default btn-block" 取消
+				else
+					button{action "edit"} type="button" class="btn btn-info btn-block" 修改
+
+
+
+=outlet

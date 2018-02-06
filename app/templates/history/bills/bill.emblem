@@ -1,0 +1,169 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	standard-detail-panel model=model pannelTitle=pannelTitle isEditing=isEditing isLeftButtonNeeded=true isRightButtonNeeded=false
+		ul.list-group.list-full.form-horizontal
+			unless model.isNew
+				li class="list-group-item form-group"
+					label.control-label.col-md-2.col-sm-12 for="id" 单号
+					.col-md-8.col-sm-12
+						p.form-control-static class="{{if model.is_lost 'text-danger'}}"
+							=model.id
+							if model.is_lost
+								span.glyphicon.glyphicon-warning-sign.text-danger.pull-right
+
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="car" 车辆
+				.col-md-8.col-sm-12
+					p.form-control-static
+						=model.car.number
+						span.sub-title
+							|[
+							=model.car.vin
+							|]
+			li class="list-group-item form-group has-feedback {{if model.errors.project.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="project" 所属项目
+				.col-md-10.col-sm-12
+					if isEditing
+						pick-up id="project" class="form-control" value=model.project.name isPicking=isPickingProject
+						if model.errors.project
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.project.name
+					each model.errors.project as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group has-feedback {{if model.errors.department.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="department" 使用部门
+				.col-md-10.col-sm-12
+					if isEditing
+						pick-up id="department" class="form-control" value=model.department.name isPicking=isPickingDepartment
+						if model.errors.department
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.department.name
+					each model.errors.department as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group has-feedback {{if model.errors.oils.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="oil" 油品
+				.col-md-10.col-sm-12
+					radio-list content=arrangedOils value=model.oil isEditing=isEditing as |item value|
+						if isEditing
+							radio-list-item content=item compareto=value action="setOil" as |isChecked|
+								if isChecked
+									span.text-success
+										span.glyphicon.glyphicon-ok
+										=item.name
+								else
+									span.text-muted
+										=item.name
+						else
+							p.form-control-static
+								=model.oil.name
+					if model.errors.oil
+						span.glyphicon.glyphicon-remove.form-control-feedback
+					each model.errors.oil as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group has-feedback {{if model.errors.volume.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="volume" 加油量
+				.col-md-10.col-sm-12
+					if isEditing
+						number-input id="volume" class="form-control" value=model.volume dot=2 isNullable=true placeholder='输入数值，支持小数点后两位'
+						if model.errors.volume
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.volume
+					each model.errors.volume as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group has-feedback {{if model.errors.mileage.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="mileage" 里程数
+				.col-md-10.col-sm-12
+					if isEditing
+						number-input id="mileage" class="form-control" value=model.mileage dot=2 isNullable=true placeholder='输入数值，支持小数点后两位'
+						if model.errors.mileage
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static
+							=model.mileage
+					each model.errors.mileage as |error|
+						.help-block.text-danger
+							=error.message
+			/ li class="list-group-item form-group has-feedback {{if model.errors.driver_name.length 'has-error'}}"
+			/ 	label.control-label.col-md-2.col-sm-12 for="driver_name" 驾驶员
+			/ 	.col-md-10.col-sm-12
+			/ 		if isEditing
+			/ 			=input id="driver_name" type="text" class="form-control" value=model.driver_name
+			/ 			if model.errors.driver_name
+			/ 				span.glyphicon.glyphicon-remove.form-control-feedback
+			/ 		else
+			/ 			p.form-control-static
+			/ 				=model.driver_name
+			/ 		each model.errors.driver_name as |error|
+			/ 			.help-block.text-danger
+			/ 				=error.message
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="rate" 油耗
+				.col-md-8.col-sm-12
+					p class="form-control-static text-{{model.rateColor}}"
+						if model.rate
+							=model.rate
+						else
+							span.margin-right 
+								=model.rate 
+							span.text-warning [第一次加油油耗无法计算]
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="oiler" 加油工
+				.col-md-8.col-sm-12
+					p.form-control-static
+						model.oiler.name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="time" 加油时间
+				.col-md-8.col-sm-12
+					if isEditing
+						datetime-input id="time" class="form-control" target=model.time placeholder='格式类似2016-06-03 12:23'
+					else
+						p.form-control-static
+							timefmt model.time
+					each model.errors.time as |error|
+						.help-block.text-danger
+							=error.message
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="signature" 签字
+				.col-md-8.col-sm-12
+					p.form-control-static
+						base64-img model.signature.sign
+			if isNeedToShowFix
+				=partial "detail-fix"
+		if sessionController.isBillLosePowered
+			.list-group.list-full
+				if isEditing
+					spin-button action="save" isLoading=model.isSaving isDisabled=model.isUnSavable class="btn btn-info btn-block" title="保存"
+					button.btn.btn-default.btn-block{action "cancel"} 取消
+				else
+					button.btn.btn-info.btn-block{action "edit"} 修改
+
+if isPickingProject
+	pick-up-pop isPicking=isPickingProject isActive=isPickUpPopActive
+		list-panel pannelTitle="选择项目" leftButtonAction="clearPop" isRightButtonNeeded=false isSearchBoxNeeded=false content=arrangedProjects value=model.project as |item value|
+			list-panel-item content=item compareto=value action="setProject" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name
+
+if isPickingDepartment
+	pick-up-pop isPicking=isPickingDepartment isActive=isPickUpPopActive
+		list-panel pannelTitle="选择部门" leftButtonAction="clearPop" isRightButtonNeeded=false isSearchBoxNeeded=false content=arrangedDepartments value=model.department as |item value|
+			list-panel-item content=item compareto=value action="setDepartment" as |isChecked|
+				if isChecked
+					span.glyphicon.glyphicon-ok.text-success.pull-right
+				=item.name
+
+=partial "common-alert"
+
+=outlet
+
+

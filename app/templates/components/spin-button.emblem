@@ -1,0 +1,14 @@
+if isIcon
+  if isLoading
+    span class='glyphicon {{loadingIcon}}'
+  else
+    span class='glyphicon {{loadedIcon}}'
+  span.sr-only 
+    =title
+else
+  if isLoading
+    =loadingText
+  else
+    if titleIcon
+      span.glyphicon.left-icon class="{{titleIcon}}"
+    =title

@@ -1,0 +1,171 @@
+=partial "container-side"
+#shortcut.container-main.opacity09.trans-all-05.print-content class="{{if applicationController.isSideActive 'is-folded'}}"
+	container-wrap isFull=true
+		navigable-pane routeName=routeName isActive=true isBack=false isHide=false
+			.panel
+				.panel-heading.text-center
+					h3.panel-title
+						a.btn-back.pull-left.hidden-print{action "goBack"}  title="返回" href='javascript:void(0)'
+							.glyphicon.glyphicon-arrow-left
+							label.sr-only 返回
+						a.btn-print.pull-right.hidden-print.hidden-xs  target="_blank" title="打印" href='print.html'
+							span.glyphicon.glyphicon-print
+							label.sr-only 打印
+						a.btn-back.pull-right.hidden-print.margin-right{action "openSetting"}  title="时间范围设置" href='javascript:void(0)'
+							.glyphicon.glyphicon-cog
+							label.sr-only 设置
+						spin-button action="export" isIcon=true loadedIcon="glyphicon-export" isLoading=isExporting isDisabled=isExporting class="btn-export pull-right margin-right is-blank hidden-print" title="导出"
+						=pannelTitle
+				.panel-scroll
+					.well.well-full.well-sm.text-center
+						span.glyphicon.glyphicon-info-sign.split-right.text-warning
+						span.text-warning
+							=filterText
+					.list-group.list-full.is-child-node-title
+						.list-group-item
+							span.glyphicon.glyphicon-subtitles.pull-left
+							|汇总报表
+					.list-group.list-full
+						if errorsForReports.length
+							.list-group-item
+								each errorsForReports.server_side_error as |error|
+									.help-block.text-danger.text-center
+										=error.message
+							button{action 'loadReports'} class="btn btn-info btn-block" title="再试一次"
+								|再试一次
+						else
+							if isSearchingReports
+								.empty-box
+									.glyphicon.glyphicon-hourglass
+									.empty-title Loading...
+							else
+								if reports.length
+									.table-responsive.reports-box
+										table.table.table-bordered.table2excel
+											thead
+												tr
+													th rowspan="2" 项目名称
+													each oils as |oil|
+														th colspan="{{departments.length}}"
+															=oil.name
+													th colspan="{{oils.length}}" 开票数量
+												tr
+													each oils as |oil|
+														each departments as |department|
+															th
+																=department.name
+													each oils as |oil|
+														th
+															=oil.name
+											tbody
+												each projects as |project|
+													tr
+														td
+															=project.name
+														each oils as |oil|
+															each departments as |department|
+																td title="项目[{{project.name}}]，油品[{{oil.name}}]，部门[{{department.name}}]"
+																	report-compute reports project=project oil=oil department=department
+														each oils as |oil|
+															td title="项目[{{project.name}}]，油品[{{oil.name}}]"
+																report-compute reports project=project oil=oil
+											tfoot
+												tr
+													th 合计数量
+													each oils as |oil|
+														each departments as |department|
+															th title="油品[{{oil.name}}]，部门[{{department.name}}]"
+																report-compute reports oil=oil department=department
+													each oils as |oil|
+														th title="油品[{{oil.name}}]"
+															report-compute reports oil=oil
+								else
+									.empty-box
+										.glyphicon.glyphicon-road
+										.empty-title 没有找到数据
+					.list-group.list-full.is-child-node-title.hidden-print
+						.list-group-item
+							span.glyphicon.glyphicon-subtitles.pull-left
+							|明细列表
+							if totalCount
+								.badge
+									=totalCount
+					.list-group.list-full.hidden-print
+						if errorsForBills.length
+							.list-group-item
+								each errorsForBills.server_side_error as |error|
+									.help-block.text-danger.text-center
+										=error.message
+							button{action 'loadBills'} class="btn btn-info btn-block" title="再试一次"
+								|再试一次
+						else
+							if isSearchingBills
+								.empty-box
+									.glyphicon.glyphicon-hourglass
+									.empty-title Loading...
+							else
+								if bills.length
+									.table-responsive.bills-box
+										table.table.table-bordered
+											thead
+												tr
+													th 单号
+													th 车辆
+													th 项目
+													th 部门
+													th 油品
+													th 加油量
+													th 油耗
+													th 里程数
+													/ th 驾驶员
+													th 加油工
+													th 加油时间
+													th 签字
+											tbody
+												each bills as |item|
+													tr
+														td
+															=item.id
+														td
+															=item.car.number
+															|[
+															substr item.car.vin start=-6
+															|]
+														td
+															=item.project.name
+														td
+															=item.department.name
+														td
+															=item.oil.name
+														td
+															=item.volume
+														td class="text-{{item.rateColor}}"
+															=item.rate
+														td
+															=item.mileage
+														/ td
+														/ 	=item.driver_name
+														td
+															=item.oiler.name
+														td
+															timefmt item.time
+														td
+															base64-img item.signature.sign
+								else
+									.empty-box
+										.glyphicon.glyphicon-road
+										.empty-title 没有找到数据
+
+		if isPicking
+			pick-up-pop isPicking=isPicking isActive=isPickUpPopActive
+				detail-panel pannelTitle='时间范围设置' leftButtonAction="clearPop"
+					.list-group.list-full
+						.list-group-item.text-center
+							date-picker-value id="startEndDate" startDate=settingOptions.startDate endDate=settingOptions.endDate format=settingDateFormat
+							date-picker startDate=settingOptions.startDate endDate=settingOptions.endDate isResetNeeded=isTimeResetNeeded isAutoCenter=true
+							if settingWarningText
+								.text-warning
+									=settingWarningText
+						button.btn.btn-info.btn-block{action 'setDateFromSetting'} 确定
+						button.btn.btn-default.btn-block{action 'reset'} 重置
+

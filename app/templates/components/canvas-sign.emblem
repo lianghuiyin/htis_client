@@ -1,0 +1,22 @@
+canvas
+=yield
+if isSaving
+	.btns-center
+		.btn-group role="group"
+			button.btn.btn-block.btn-warning{action "abort"}
+				.glyphicon.glyphicon-remove.left-icon
+				span 取消
+		.help-block.text-muted.text-center
+			|如果长时间无响应，可以取消重新提交
+else
+	.btns-center
+		.btn-group role="group"
+			button.btn.btn-default{action "submit"}
+				.glyphicon.glyphicon-ok.left-icon
+				span 提交
+			button.btn.btn-default{action "reset"}
+				.glyphicon.glyphicon-ban-circle.left-icon
+				span 清除
+			button.btn.btn-default{action "cancel"}
+				.glyphicon.glyphicon-remove.left-icon
+				span 取消

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>打印预览--上汽大众加油机信息系统</title>
+
+    <link rel="stylesheet" href="assets/vendor.css">
+    <link rel="stylesheet" href="assets/htis.css">
+    <style>
+      html,body{
+        height:auto;
+        overflow: auto;
+        background:#eee;
+      }
+    </style>
+  </head>
+  <body class = "print-box">
+    <div class = "print-title help-block hidden-print">
+        以下为打印预览【仅供参考，实际打印效果与页面内容、打印设置等有关】，请点击右侧打印按钮来打印。
+        <button onclick = "print()" class="pull-right btn-primary btn-sm hidden-print hidden-xs" title = "打印">
+          <span class="glyphicon glyphicon-print" aria-hidden="true"></span>
+          <span class = "sr-only">打印</span>
+        </button>
+    </div>
+    <div class = "print-footer">
+        <div class="container-fluid">
+          <div class="row">
+              <div class="col-md-4">
+                <img src = "images/logo_SVW.jpg" alt = "上海大众汽车"/>
+              </div>
+              <div class="col-md-4">
+                <span class = "help-block">加油机信息系统</span>
+              </div>
+              <div class="col-md-4">
+                <img src = "images/logo_TPG.jpg" alt = "TPG"/>
+              </div>
+          </div>
+        </div>
+    </div>
+    <script src="print/jquery.min.js"></script>
+    <script src="print/print.js"></script>
+  </body>
+</html>

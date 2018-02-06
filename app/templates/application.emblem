@@ -1,0 +1,30 @@
+=outlet
+
+.footer.navbar-fixed-bottom
+	a.btn-left click='goAbout' title="关于我们"
+		span.glyphicon.glyphicon-info-sign
+		label.sr-only 关于我们
+	a.author target='blank'
+		=author
+	span.hidden-xs ·
+	span.hidden-xs.copyright
+		=copyright
+	span.hidden-xs ·
+	span.hidden-xs.version
+		=version
+
+
+if changesetController.isNeedToShowError
+	.changeset-error.alert.alert-danger
+		button.btn.btn-sm.btn-block.btn-danger{action "fetchChangeset"}
+			|检测到多次数据同步失败，请检查网络连接是否正常！
+
+
+audio id="billAudio" src="http://192.168.0.99:86/musics/notify.mp3"
+
+/ audio id="billAudio"
+/ 	source src="musics/notify.ogg" type="audio/ogg"
+/ 	source src="musics/notify.mp3" type="audio/mpeg"
+/ 	source src="musics/notify.wav" type="audio/wav"
+
+/iframe src="musics/notify.mp3"

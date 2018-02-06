@@ -1,0 +1,570 @@
+.list-group.list-full
+	if arrangedResult.length
+		each arrangedResult as |item|
+			list-panel-item class="instance-item clearboth" tagName="div" content=item compareto=selection action="unfodeInstance" as |isChecked|
+				if isChecked
+					a.is-child-node-title{action "fodeInstance"}
+						span.glyphicon.glyphicon-tags.pull-left
+						|申请单详情
+						if item.is_pending
+							span.glyphicon.glyphicon-time.text-warning.pull-right title="待审核"
+						if item.is_released
+							span.glyphicon.glyphicon-inbox.text-success.pull-right title="可加油"
+						else
+							span.glyphicon.glyphicon-warning-sign.text-warning.pull-right title="待处理"
+						unless item.is_enable
+							span.glyphicon.glyphicon-ban-circle.text-danger.pull-right title="已暂停"
+						if item.is_archived
+							span.glyphicon.glyphicon-cloud.text-muted.pull-right title="已结束/归档"
+					ul.list-group.list-full.form-horizontal
+						if isCreatingTrace
+							li class="list-group-item form-group has-feedback {{if creatingTrace.errors.project.length 'has-error'}}"
+								label.control-label.col-md-2.col-sm-12 for="project" 所属项目
+								.col-md-10.col-sm-12
+									compare-item isChangeTagable=true changeTag="所属项目" changeTags=changeTags content=item.project compareto=creatingTrace.project as |isEqual|
+										unless isEqual
+											.del.text-warning
+												item.project.name
+									pick-up id="project_t" class="form-control" value=creatingTrace.project.name isPicking=isPickingProjectForTrace
+									if creatingTrace.errors.project
+										span.glyphicon.glyphicon-remove.form-control-feedback
+									each creatingTrace.errors.project as |error|
+										.help-block.text-danger
+											=error.message
+							li class="list-group-item form-group has-feedback {{if creatingTrace.errors.department.length 'has-error'}}"
+								label.control-label.col-md-2.col-sm-12 for="department" 使用部门
+								.col-md-10.col-sm-12
+									compare-item isChangeTagable=true changeTag="使用部门" changeTags=changeTags content=item.department compareto=creatingTrace.department as |isEqual|
+										unless isEqual
+											.del.text-warning
+												item.department.name
+									pick-up id="department_t" class="form-control" value=creatingTrace.department.name isPicking=isPickingDepartmentForTrace
+									if creatingTrace.errors.department
+										span.glyphicon.glyphicon-remove.form-control-feedback
+									each creatingTrace.errors.department as |error|
+										.help-block.text-danger
+											=error.message
+							li class="list-group-item form-group has-feedback {{if creatingTrace.errors.user_name.length 'has-error'}}"
+								label.control-label.col-md-2.col-sm-12 for="user_name" 使用人
+								.col-md-10.col-sm-12
+									compare-item isChangeTagable=true changeTag="使用人" changeTags=changeTags content=item.user_name compareto=creatingTrace.user_name as |isEqual|
+										unless isEqual
+											.del.text-warning
+												item.user_name
+									=input id="user_name_t" type="text" class="form-control" value=creatingTrace.user_name
+									if creatingTrace.errors.user_name
+										span.glyphicon.glyphicon-remove.form-control-feedback
+									each creatingTrace.errors.user_name as |error|
+										.help-block.text-danger
+											=error.message
+							li class="list-group-item form-group has-feedback {{if creatingTrace.errors.oils.length 'has-error'}}"
+								label.control-label.col-md-2.col-sm-12 for="oil" 油品
+								.col-md-10.col-sm-12
+									compare-item isChangeTagable=true changeTag="油品" changeTags=changeTags content=creatingTrace.oils compareto=item.oils as |isEqual|
+										unless isEqual
+											.del.text-warning
+												checkbox-list-value content=item.oils
+									checkbox-list content=arrangedOils selection=creatingTrace.oils as |item selection|
+										checkbox-list-item value=item compareto=selection isEditing=true action="checkOilForTrace" as |isChecked|
+											if isChecked
+												span.glyphicon.glyphicon-eye-open.text-success
+											else
+												span.glyphicon.glyphicon-eye-close.text-danger
+											=item.name
+									if creatingTrace.errors.oils
+										span.glyphicon.glyphicon-remove.form-control-feedback
+									each creatingTrace.errors.oils as |error|
+										.help-block.text-danger
+											=error.message
+							li class="list-group-item form-group has-feedback {{if creatingTrace.errors.goal.length 'has-error'}}"
+								label.control-label.col-md-2.col-sm-12 for="goal" 实验目的
+								.col-md-10.col-sm-12
+									compare-item isChangeTagable=true changeTag="实验目的" changeTags=changeTags content=creatingTrace.goal compareto=item.goal as |isEqual|
+										unless isEqual
+											.del.text-warning
+												item.goal
+									=textarea id="goal_t" type="text" rows="4" class="form-control" value=creatingTrace.goal
+									if creatingTrace.errors.goal
+										span.glyphicon.glyphicon-remove.form-control-feedback
+									each creatingTrace.errors.goal as |error|
+										.help-block.text-danger
+											=error.message
+							li class="list-group-item form-group has-feedback {{if creatingTrace.errors.start_date.length 'has-error'}}"
+								label.control-label.col-md-2.col-sm-12 for="start_date" 起止时间
+								.col-md-10.col-sm-12
+									compare-item isChangeTagable=true changeTag="起始时间" changeTags=changeTags tagName="span" content=creatingTrace.start_date compareto=item.start_date as |isEqual|
+										unless isEqual
+											span.del.text-warning.margin-right
+												|起：
+												timefmt item.start_date 'yyyy-MM-dd'
+									compare-item isChangeTagable=true changeTag="终止时间" changeTags=changeTags tagName="span" content=creatingTrace.end_date compareto=item.end_date as |isEqual|
+										unless isEqual
+											span.del.text-warning
+												|止：
+												timefmt item.end_date 'yyyy-MM-dd'
+									date-picker-value id="instance_dates_t" startDate=creatingTrace.start_date endDate=creatingTrace.end_date
+									date-picker startDate=creatingTrace.start_date endDate=creatingTrace.end_date
+									if creatingTrace.errors.start_date
+										span.glyphicon.glyphicon-remove.form-control-feedback
+									each creatingTrace.errors.start_date as |error|
+										.help-block.text-danger
+											=error.message
+						else
+							li class="list-group-item form-group has-feedback"
+								label.control-label.col-md-2.col-sm-12 系统编号
+								.col-md-10.col-sm-12
+									p.form-control-static
+										=item.id
+							li class="list-group-item form-group"
+								label.control-label.col-md-2.col-sm-12 所属项目
+								.col-md-10.col-sm-12
+									p.form-control-static
+										if item.is_pending
+											compare-item content=item.project compareto=item.lastTrace.project as |isEqual|
+												if isEqual
+													item.project.name
+												else
+													.del.text-muted
+														item.project.name
+													.text-warning
+														item.lastTrace.project.name
+										else
+											item.project.name
+							li class="list-group-item form-group"
+								label.control-label.col-md-2.col-sm-12 使用部门
+								.col-md-10.col-sm-12
+									p.form-control-static
+										if item.is_pending
+											compare-item content=item.department compareto=item.lastTrace.department as |isEqual|
+												if isEqual
+													item.department.name
+												else
+													.del.text-muted
+														item.department.name
+													.text-warning
+														item.lastTrace.department.name
+										else
+											item.department.name
+							li class="list-group-item form-group"
+								label.control-label.col-md-2.col-sm-12 使用人
+								.col-md-10.col-sm-12
+									p.form-control-static
+										if item.is_pending
+											compare-item content=item.user_name compareto=item.lastTrace.user_name as |isEqual|
+												if isEqual
+													item.user_name
+												else
+													.del.text-muted
+														item.user_name
+													.text-warning
+														item.lastTrace.user_name
+										else
+											item.user_name
+							li class="list-group-item form-group"
+								label.control-label.col-md-2.col-sm-12 油品
+								.col-md-10.col-sm-12
+									p.form-control-static
+										if item.is_pending
+											compare-item content=item.oils compareto=item.lastTrace.oils as |isEqual|
+												if isEqual
+													checkbox-list-value content=item.oils
+												else
+													.del.text-muted
+														checkbox-list-value content=item.oils
+													.text-warning
+														checkbox-list-value content=item.lastTrace.oils
+										else
+											checkbox-list-value content=item.oils
+							li class="list-group-item form-group"
+								label.control-label.col-md-2.col-sm-12 实验目的
+								.col-md-10.col-sm-12
+									p.form-control-static
+										if item.is_pending
+											compare-item content=item.goal compareto=item.lastTrace.goal as |isEqual|
+												if isEqual
+													item.goal
+												else
+													.del.text-muted
+														item.goal
+													.text-warning
+														item.lastTrace.goal
+										else
+											item.goal
+							li class="list-group-item form-group"
+								label.control-label.col-md-2.col-sm-12 起止时间
+								.col-md-10.col-sm-12
+									p.form-control-static
+										if item.is_pending
+											compare-item tagName="span" content=item.start_date compareto=item.lastTrace.start_date as |isEqual|
+												unless isEqual
+													span.del.text-muted.margin-right
+														|起：
+														timefmt item.start_date 'yyyy-MM-dd'
+											compare-item tagName="span" content=item.end_date compareto=item.lastTrace.end_date as |isEqual|
+												unless isEqual
+													span.del.text-muted
+														|止：
+														timefmt item.end_date 'yyyy-MM-dd'
+											.date-picker-value
+												compare-item tagName="span" content=item.start_date compareto=item.lastTrace.start_date as |isEqual|
+													if isEqual
+														timefmt item.lastTrace.start_date 'yyyy-MM-dd'
+													else
+														span.text-warning
+															timefmt item.lastTrace.start_date 'yyyy-MM-dd'
+												.glyphicon.glyphicon-arrow-right
+												compare-item tagName="span" content=item.end_date compareto=item.lastTrace.end_date as |isEqual|
+													if isEqual
+														timefmt item.lastTrace.end_date 'yyyy-MM-dd'
+													else
+														span.text-warning
+															timefmt item.lastTrace.end_date 'yyyy-MM-dd'
+										else
+											date-picker-value startDate=item.start_date endDate=item.end_date
+							li class="list-group-item form-group"
+								label.control-label.col-md-2.col-sm-12 for="bill_count" 加油单
+								.col-md-10.col-sm-12
+									p.form-control-static
+										|该申请单目前有
+										=item.bill_count
+										|个加油单
+							li.list-group-item.form-group
+								label.control-label.col-md-2.col-sm-12 创建人
+								.col-md-8.col-sm-12
+									p.form-control-static
+										=item.creater.name
+							li.list-group-item.form-group
+								label.control-label.col-md-2.col-sm-12 创建时间
+								.col-md-8.col-sm-12
+									p.form-control-static
+										timefmt item.created_date
+							li.list-group-item.form-group
+								label.control-label.col-md-2.col-sm-12 修改人
+								.col-md-8.col-sm-12
+									p.form-control-static
+										=item.modifier.name
+							li.list-group-item.form-group
+								label.control-label.col-md-2.col-sm-12 修改时间
+								.col-md-8.col-sm-12
+									p.form-control-static
+										timefmt item.modified_date
+					if isChecker
+						instance-mail item
+					unless isCreatingTrace
+						ul.trace-list.list-group
+							if isSearchingTraces
+								|Loading...
+							else
+								each item.sortedTracesDesc as |trace|
+									trace-list-item content=trace
+					.list-group.list-full
+						if item.is_archived
+							.alert.alert-warning.text-center 
+								span.glyphicon.glyphicon-cloud.left-icon
+								span 该申请单已结束
+						else
+							if item.is_pending
+								if isChecker
+									if isChecking
+										.alert.alert-warning
+											.help-block.text-warning.text-center 
+												if isApproved
+													|核准后该车辆将允许加油，您可以通过中止操作来撤销本次审核，确定要继续吗？
+												else
+													|将驳回给申请人，该操作不可撤销，确定要继续吗？
+											if checkingModel.errors.server_side_error
+												alert-error model=checkingModel action="clearError"
+											spin-button action="saveCheckingModel" isLoading=checkingModel.isSaving isDisabled=checkingModel.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+											button.btn.btn-default.btn-sm.btn-block{action "cancelChecking"} 
+												span 取消
+									else
+										radio-list class="btn-block check-radio-list" content=checkRadioList value=isApproved contentValueKey="value" isEditing=true as |item value|
+											radio-list-item content=item contentValueKey="value" compareto=value action="setIsApproved" as |isChecked|
+												if isChecked
+													if value
+														span.text-success
+															span.glyphicon.glyphicon-ok
+															=item.name
+													else
+														span.text-danger
+															span.glyphicon.glyphicon-remove
+															=item.name
+												else
+													span.text-muted
+														=item.name
+										.list-group-item.form-group.input-border-box
+											=textarea type="text" value=checkText rows="4" class="form-control"
+											.help-block
+												if isApproved
+													|您可以捎句话给申请人
+												else
+													|请输入驳回理由
+										spin-button action="checkInstance" isLoading=false isDisabled=isUnCheckable class="btn btn-sm btn-block btn-info" title="提交" titleIcon="glyphicon-send"
+								else
+									if isRecapturing
+										.list-group-item.form-group.input-border-box
+											=textarea type="text" value=recapturingTrace.end_info rows="4" class="form-control"
+											.help-block 您可以捎句话给审核人
+										.alert.alert-warning
+											.help-block.text-warning.text-center 取回后申请单需要重新提交审核，该操作无法撤销，确定要继续吗？
+											if recapturingTrace.errors.server_side_error
+												alert-error model=recapturingTrace action="clearError"
+											spin-button action="saveRecapturingTrace" isLoading=recapturingTrace.isSaving isDisabled=recapturingTrace.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+											button.btn.btn-default.btn-sm.btn-block{action "cancelRecapturingTrace"} 
+												span 取消
+									else
+										button.btn.btn-info.btn-sm.btn-block{action "recaptureTrace"}
+											span.glyphicon.glyphicon-adjust.left-icon
+											span 取回
+							else
+								if isChecker
+									if isAborting
+										.list-group-item.form-group.input-border-box
+											=textarea type="text" value=abortingModel.start_info rows="4" class="form-control"
+											.help-block 您可以捎句话给申请人
+										.alert.alert-warning
+											.help-block.text-warning.text-center 中止后该申请单将不能加油，且该操作不可撤销，确定要继续吗？
+											if abortingModel.errors.server_side_error
+												alert-error model=abortingModel action="clearError"
+											spin-button action="saveAbortingModel" isLoading=abortingModel.isSaving isDisabled=abortingModel.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+											button.btn.btn-default.btn-sm.btn-block{action "cancelAborting"} 
+												span 取消
+									else
+										if isArchiving
+											.alert.alert-warning
+												if isArchivable
+													.help-block.text-warning.text-center 结束后该申请单将不可见，且该操作无法撤销，确定要继续吗？
+													if archivingInstance.errors.server_side_error
+														alert-error model=archivingInstance action="clearError"
+													spin-button action="saveArchivingInstance" isLoading=archivingInstance.isSaving isDisabled=archivingInstance.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+												else
+													.help-block.text-warning.text-center 该申请单不能结束，只有未发布/已暂停的申请单及可加油但已过期的申请单允许结束？
+												button.btn.btn-default.btn-sm.btn-block{action "cancelArchivingInstance"} 
+													span 取消
+										else
+											if item.isAbortable
+												button.btn.btn-info.btn-sm.btn-block{action "abortInstance"}
+													span.glyphicon.glyphicon-adjust.left-icon
+													span 中止
+											button.btn.btn-warning.btn-sm.btn-block{action "archiveInstance"}
+												span.glyphicon.glyphicon-cloud-upload.left-icon
+												span 结束
+								else
+									if isCreatingTrace
+										.list-group-item.form-group.input-border-box
+											=textarea type="text" value=creatingTrace.start_info rows="4" class="form-control"
+											.help-block 您可以捎句话给审核人
+										.alert.alert-warning
+											if changeTags.length
+												.help-block.text-warning
+													if isRecheckNeeded
+														span.glyphicon.glyphicon-warning-sign
+													label.control-label 已修改字段：
+													div
+														checkbox-list-value tagName="span" content=changeTags isObject=false
+											else
+												.help-block.text-warning.text-center
+													if item.is_released
+														|该申请单可加油，如果修改了敏感信息将需要重新提交审核，且提交后不影响可加油版本
+													else
+														|该申请单未发布，需要提交审核
+											if creatingTrace.errors.server_side_error
+												alert-error model=creatingTrace action="clearError"
+											if isRecheckNeeded
+												spin-button action="saveNewTrace" isLoading=creatingTrace.isSaving isDisabled=creatingTrace.isUnSavable class="btn btn-sm btn-block btn-danger" title="提交"
+											else
+												spin-button action="saveNewTrace" isLoading=creatingTrace.isSaving isDisabled=isCreatingTraceUnSavable class="btn btn-sm btn-block btn-info" title="保存"
+											button.btn.btn-default.btn-sm.btn-block{action "cancelCreatingTrace"}
+												span 取消
+									else
+										if isArchiving
+											.alert.alert-warning
+												if isArchivable
+													.help-block.text-warning.text-center 结束后该申请单将不可见，且该操作无法撤销，确定要继续吗？
+													if archivingInstance.errors.server_side_error
+														alert-error model=archivingInstance action="clearError"
+													spin-button action="saveArchivingInstance" isLoading=archivingInstance.isSaving isDisabled=archivingInstance.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+												else
+													.help-block.text-warning.text-center 该申请单不能结束，只有未发布/已暂停的申请单及可加油但已过期的申请单允许结束？
+												button.btn.btn-default.btn-sm.btn-block{action "cancelArchivingInstance"} 
+													span 取消
+										else
+											if isForbidding
+												.list-group-item.form-group.input-border-box
+													=textarea type="text" value=forbiddingModel.start_info rows="4" class="form-control"
+													.help-block 您可以捎句话给审核人
+												.alert.alert-warning
+													.help-block.text-warning.text-center 暂停后该申请单将无法加油，您可以随时恢复该申请单，确定要继续吗？
+													if forbiddingModel.errors.server_side_error
+														alert-error model=forbiddingModel action="clearError"
+													spin-button action="saveForbiddingModel" isLoading=forbiddingModel.isSaving isDisabled=forbiddingModel.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+													button.btn.btn-default.btn-sm.btn-block{action "cancelForbidding"} 
+														span 取消
+											else
+												if isEnabling
+													.list-group-item.form-group.input-border-box
+														=textarea type="text" value=enablingModel.start_info rows="4" class="form-control"
+														.help-block 您可以捎句话给审核人
+													.alert.alert-warning
+														.help-block.text-warning.text-center 恢复后该申请单如果可加油将允许加油， 确定要继续吗？
+														if enablingModel.errors.server_side_error
+															alert-error model=enablingModel action="clearError"
+														spin-button action="saveEnablingModel" isLoading=enablingModel.isSaving isDisabled=enablingModel.isUnSavable class="btn btn-sm btn-danger btn-block" title="确定"
+														button.btn.btn-default.btn-sm.btn-block{action "cancelEnabling"} 
+															span 取消
+												else
+													if item.isForbidable
+														button.btn.btn-info.btn-sm.btn-block{action "forbidInstance"} 
+															span.glyphicon.glyphicon-ban-circle.left-icon
+															span 暂停
+													unless item.is_enable
+														button.btn.btn-info.btn-sm.btn-block{action "enableInstance"} 
+															span.glyphicon.glyphicon-ok-sign.left-icon
+															span 恢复
+													button.btn.btn-info.btn-sm.btn-block{action "createNewTrace"}
+														span.glyphicon.glyphicon-edit.left-icon
+														span 修改
+													button.btn.btn-warning.btn-sm.btn-block{action "archiveInstance"}
+														span.glyphicon.glyphicon-cloud-upload.left-icon
+														span 结束
+						button.btn.btn-default.btn-sm.btn-block{action "fodeInstance"}
+							span.glyphicon.glyphicon-triangle-top.left-icon
+							span 折叠
+				else
+					if equipment.isXs
+						div
+							.glyphicon.glyphicon-tag.pull-left
+							=item.project.name
+							status-icon item.lastTrace.status
+							if item.is_archived
+								span.glyphicon.glyphicon-cloud.text-danger
+						div.clearfix
+							.pull-left.sub-tip.xs
+								date-picker-value startDate=item.start_date endDate=item.end_date
+							if item.isFinished
+								span.pull-right.glyphicon.glyphicon-cloud-upload.text-danger
+							else if item.isFinishing
+								span.pull-right.glyphicon.glyphicon-cloud-upload.text-warning
+
+					else
+						.pull-left
+							span.glyphicon.glyphicon-tag.pull-left
+							=item.project.name
+							span.sub-title
+								|[
+								=item.department.name
+								|]
+							if item.traces.length
+								status-icon item.lastTrace.status
+							else
+								.status-icon.glyphicon.glyphicon-question-sign.text-muted
+							if item.is_archived
+								span.glyphicon.glyphicon-cloud.text-danger
+						.pull-right
+							span.pull-right.sub-tip
+								date-picker-value startDate=item.start_date endDate=item.end_date
+							if item.isFinished
+								span.pull-right.glyphicon.glyphicon-cloud-upload.left-icon.text-danger
+							else if item.isFinishing
+								span.pull-right.glyphicon.glyphicon-cloud-upload.left-icon.text-warning
+	else
+		unless isSearching
+			.empty-box
+				.glyphicon.glyphicon-road
+				.empty-title 申请单为空
+	each errorsForInstances.server_side_error as |error|
+		.help-block.text-danger.text-center
+			=error.message
+	if isSearching
+		.empty-box
+			.glyphicon.glyphicon-hourglass
+			.empty-title Loading...
+	else
+		if isTopButtonNeeded
+			button{action "toggleToShowAll"} type="button" class="btn btn-default btn-xs btn-block" title="切换全部显示"
+				span class="glyphicon {{if isToShowAll 'glyphicon-chevron-up' 'glyphicon-chevron-down'}}"
+		if isMoreButtonNeeded
+			spin-button action="fetchNext" isIcon=true loadedIcon="glyphicon-chevron-down" isLoading=isSearching isDisabled=isSearching class="btn btn-info btn-xs btn-block" title="更多"
+
+if isCreatingInstance
+	.list-group.list-full.is-child-node-title
+		.list-group-item
+			span.glyphicon.glyphicon-subtitles.pull-left
+			|新建申请单
+	ul.list-group.list-full.form-horizontal
+		li class="list-group-item form-group has-feedback {{if creatingInstance.errors.project.length 'has-error'}}"
+			label.control-label.col-md-2.col-sm-12 for="project" 所属项目
+			.col-md-10.col-sm-12
+				pick-up id="project" class="form-control" value=creatingInstance.project.name isPicking=isPickingProjectForInstance
+				if creatingInstance.errors.project
+					span.glyphicon.glyphicon-remove.form-control-feedback
+				each creatingInstance.errors.project as |error|
+					.help-block.text-danger
+						=error.message
+		li class="list-group-item form-group has-feedback {{if creatingInstance.errors.department.length 'has-error'}}"
+			label.control-label.col-md-2.col-sm-12 for="department" 使用部门
+			.col-md-10.col-sm-12
+				pick-up id="department" class="form-control" value=creatingInstance.department.name isPicking=isPickingDepartmentForInstance
+				if creatingInstance.errors.department
+					span.glyphicon.glyphicon-remove.form-control-feedback
+				each creatingInstance.errors.department as |error|
+					.help-block.text-danger
+						=error.message
+		li class="list-group-item form-group has-feedback {{if creatingInstance.errors.user_name.length 'has-error'}}"
+			label.control-label.col-md-2.col-sm-12 for="user_name" 使用人
+			.col-md-10.col-sm-12
+				=input id="user_name" type="text" class="form-control" value=creatingInstance.user_name
+				if creatingInstance.errors.user_name
+					span.glyphicon.glyphicon-remove.form-control-feedback
+				each creatingInstance.errors.user_name as |error|
+					.help-block.text-danger
+						=error.message
+		li class="list-group-item form-group has-feedback {{if creatingInstance.errors.oils.length 'has-error'}}"
+			label.control-label.col-md-2.col-sm-12 for="oil" 油品
+			.col-md-10.col-sm-12
+				checkbox-list content=arrangedOils selection=creatingInstance.oils as |item selection|
+					checkbox-list-item value=item compareto=selection isEditing=true action="checkOilForInstance" as |isChecked|
+						if isChecked
+							span.glyphicon.glyphicon-eye-open.text-success
+						else
+							span.glyphicon.glyphicon-eye-close.text-danger
+						=item.name
+
+				if creatingInstance.errors.oils
+					span.glyphicon.glyphicon-remove.form-control-feedback
+				each creatingInstance.errors.oils as |error|
+					.help-block.text-danger
+						=error.message
+		li class="list-group-item form-group has-feedback {{if creatingInstance.errors.goal.length 'has-error'}}"
+			label.control-label.col-md-2.col-sm-12 for="goal" 实验目的
+			.col-md-10.col-sm-12
+				=textarea id="goal" type="text" rows="4" class="form-control" value=creatingInstance.goal
+				if creatingInstance.errors.goal
+					span.glyphicon.glyphicon-remove.form-control-feedback
+				each creatingInstance.errors.goal as |error|
+					.help-block.text-danger
+						=error.message
+		li class="list-group-item form-group has-feedback {{if creatingInstance.errors.start_date.length 'has-error'}}"
+			label.control-label.col-md-2.col-sm-12 for="start_date" 起止时间
+			.col-md-10.col-sm-12
+				date-picker-value id="instance_dates" startDate=creatingInstance.start_date endDate=creatingInstance.end_date
+				date-picker startDate=creatingInstance.start_date endDate=creatingInstance.end_date
+				if creatingInstance.errors.start_date
+					span.glyphicon.glyphicon-remove.form-control-feedback
+				each creatingInstance.errors.start_date as |error|
+					.help-block.text-danger
+						=error.message
+	.list-group.list-full
+		.list-group-item.form-group.input-border-box
+			=textarea type="text" value=creatingInstance.start_info rows="4" class="form-control"
+			.help-block 您可以捎句话给审核人
+		if creatingInstance.errors.server_side_error
+			alert-error model=creatingInstance action="clearError"
+		spin-button action="saveNewInstance" isLoading=creatingInstance.isSaving isDisabled=creatingInstance.isUnSavable class="btn btn-info btn-block" title="保存"
+		button.btn.btn-default.btn-block{action "goBack"} 取消
+else
+	unless isChecker
+		unless model.is_archived
+			.list-group.list-full
+				button.btn.btn-info.btn-block{action "goNewInstance"} 新建申请单
+

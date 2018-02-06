@@ -1,0 +1,114 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	detail-panel pannelTitle=pannelTitle class="panel-primary"
+		ul.list-group.list-full.form-horizontal
+			li class="list-group-item form-group has-feedback {{if model.errors.mileage.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-2.col-xs-4 for="mileage" 里程数
+				.col-md-10.col-sm-10.col-xs-8
+					if isFirstStepEditing
+						number-input id="mileage" class="form-control" value=model.mileage dot=2 isNullable=true placeholder='输入数值，支持小数点后两位'
+						if model.errors.mileage
+							span.glyphicon.glyphicon-remove.form-control-feedback
+					else
+						p.form-control-static.text-success
+							=model.mileage
+					each model.errors.mileage as |error|
+						.help-block.text-danger
+							=error.message
+			/ li class="list-group-item form-group has-feedback {{if model.errors.driver_name.length 'has-error'}}"
+			/ 	label.control-label.col-md-2.col-sm-2.col-xs-4 for="driver_name" 驾驶员
+			/ 	.col-md-10.col-sm-10.col-xs-8
+			/ 		if isFirstStepEditing
+			/ 			=input id="driver_name" type="text" class="form-control" value=model.driver_name placeholder='输入驾驶员名称'
+			/ 			if model.errors.driver_name
+			/ 				span.glyphicon.glyphicon-remove.form-control-feedback
+			/ 		else
+			/ 			p.form-control-static.text-success
+			/ 				=model.driver_name
+			/ 				if model.signature
+			/ 					.pull-right.glyphicon.glyphicon-pawn.text-danger
+			/ 		each model.errors.driver_name as |error|
+			/ 			.help-block.text-danger
+			/ 				=error.message
+			li class="list-group-item form-group has-feedback"
+				label.control-label.col-md-2.col-sm-2.col-xs-4 for="oil" 油品
+				.col-md-10.col-sm-10.col-xs-8
+					radio-list content=oils value=model.oil isEditing=isFirstStepEditing as |item value|
+						if isFirstStepEditing
+							radio-list-item content=item compareto=value action="setOil" as |isChecked|
+								if isChecked
+									span.text-success
+										span.glyphicon.glyphicon-ok
+										=item.name
+								else
+									span.text-muted
+										=item.name
+						else
+							span.text-success
+								=model.oil.name
+			unless isFirstStepEditing
+				li class="list-group-item form-group has-feedback {{if model.errors.volume.length 'has-error'}}"
+					label.control-label.col-md-2.col-sm-2.col-xs-4 for="volume" 加油量
+					.col-md-10.col-sm-10.col-xs-8
+						if isSecondStepEditing
+							number-input id="volume" class="form-control" value=model.volume dot=2 isNullable=true placeholder='输入数值，支持小数点后两位'
+							if model.errors.volume
+								span.glyphicon.glyphicon-remove.form-control-feedback
+						else
+							p.form-control-static.text-success
+								=model.volume
+						each model.errors.volume as |error|
+							.help-block.text-danger
+								=error.message
+		.list-group.list-full
+			if isFirstStepEditing
+				button.btn.btn-info.btn-block.btn-lg{action "goNext"} 下一步
+			else
+				unless isSigning
+					if isSubmiting
+						.list-group-item.list-full
+							.alert.alert-warning
+								.help-block.text-warning.text-center 请加油员确认后提交！
+								if model.errors.server_side_error
+									alert-error model=model action="clearError"
+								spin-button action="save" isLoading=model.isSaving isDisabled=model.isUnSavable class="btn btn-lg btn-danger btn-block" title="确定"
+								button.btn.btn-cancel.btn-default.btn-lg.btn-block{action "cancelSubmit"} 
+									span 取消
+					else if isSignNeeded
+						if isWaitingFocusForSign
+							.help-block.text-muted.text-center
+								|正在打开签字板
+						else
+							button.btn.btn-info.btn-block.btn-lg{action "goSigning"}
+								|签字
+							button.btn.btn-cancel.btn-default.btn-block.btn-lg{action "cancelToPrevious"} 取消
+					else
+						button.btn.btn-info.btn-block.btn-lg{action "confirmToSubmit"} 确认
+						button.btn.btn-cancel.btn-default.btn-block.btn-lg{action "cancelToPrevious"} 取消
+						if model.signature
+							p.form-control-static.text-success.text-center
+								.glyphicon.glyphicon-pawn.text-success.split-right
+								|已签字
+
+if isSigning
+	pick-up-pop class="scanning-filling-signing" isPicking=isSigning isActive=isPickUpPopActive isAlert=true isNoneAnimation=true
+		canvas-sign submitAction="submit" resetAction="resetCanvas" cancelAction="cancelSigning" isSaving=isSavingSign
+			if isSavingSign
+				.fix-icon
+					.glyphicon.glyphicon-pawn.text-warning
+					.icon-title
+						span 正在保存签字，请耐心等待...
+			else
+				if model.errors.signature
+					alert-error isCustomized=true action="clearErrorForSignature"
+						each model.errors.signature as |error|
+							=error.message
+				if signature.errors.server_side_error.length
+					alert-error model=signature isCustomized=true action="clearError"
+						each signature.errors.server_side_error as |error|
+							=error.message
+
+
+
+=partial "common-alert"
+
+=outlet

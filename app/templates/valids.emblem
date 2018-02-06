@@ -1,0 +1,9 @@
+#valids.opacity09.print-content
+	container-wrap isFull=true
+		each departments as |department|
+			.valid-item
+				.valid-item-title
+					=department.name
+					span.pull-right.badge
+						|0
+				.valid-item-content

@@ -1,0 +1,9 @@
+if startDate
+	timefmt startDate format
+else
+	span.text-warning 未选择
+span.glyphicon.glyphicon-arrow-right
+if endDate
+	timefmt endDate format
+else
+	span.text-warning 未选择

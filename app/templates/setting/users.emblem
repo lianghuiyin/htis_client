@@ -1,0 +1,9 @@
+if equipment.isXs
+	=partial "setting/navigable-pane-users"
+	=outlet
+else
+	container-wrap isRight=true
+		=partial "setting/navigable-pane-users"
+		=outlet
+
+		

@@ -1,0 +1,93 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	detail-panel pannelTitle=pannelTitle class="panel-primary"
+		ul.list-group.list-full.form-horizontal
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="id" 单号
+				.col-md-8.col-sm-12
+					p.form-control-static class="{{if model.is_lost 'text-danger'}}"
+						=model.id
+						if model.is_lost
+							span.glyphicon.glyphicon-warning-sign.text-danger.pull-right
+						unless model.creater.is_sign_needed
+							span.glyphicon.glyphicon-pawn.text-success.pull-right
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="car_number" 车辆编号
+				.col-md-8.col-sm-12
+					p.form-control-static
+						if model.car
+							=model.car.number
+						else
+							span.text-warning 该车辆已闲置
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="car_vin" VIN
+				.col-md-8.col-sm-12
+					p.form-control-static
+						if model.car
+							=model.car.vin
+						else
+							span.text-warning 该车辆已闲置
+			if model.instance.start_date
+				li class="list-group-item form-group"
+					label.control-label.col-md-2.col-sm-12 for="car_vin" 有效期
+					.col-md-8.col-sm-12
+						p.form-control-static
+							date-picker-value startDate=model.instance.start_date endDate=model.instance.end_date
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="car_vin" 所属项目
+				.col-md-8.col-sm-12
+					p.form-control-static
+						=model.project.name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="car_vin" 使用部门
+				.col-md-8.col-sm-12
+					p.form-control-static
+						=model.department.name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="oil" 油品
+				.col-md-8.col-sm-12
+					p.form-control-static
+						=model.oil.name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="volume" 加油量
+				.col-md-8.col-sm-12
+					p.form-control-static
+						=model.volume
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="mileage" 里程数
+				.col-md-8.col-sm-12
+					p.form-control-static
+						=model.mileage
+			/ li class="list-group-item form-group"
+			/ 	label.control-label.col-md-2.col-sm-12 for="driver_name" 驾驶员
+			/ 	.col-md-8.col-sm-12
+			/ 		p.form-control-static
+			/ 			=model.driver_name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="rate" 油耗
+				.col-md-8.col-sm-12
+					p class="form-control-static text-{{model.rateColor}}"
+						if model.rate
+							=model.rate
+						else
+							span.margin-right 
+								=model.rate 
+							span.text-warning [第一次加油油耗无法计算]
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="oiler" 加油工
+				.col-md-8.col-sm-12
+					p.form-control-static
+						model.oiler.name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 for="time" 加油时间
+				.col-md-8.col-sm-12
+					p.form-control-static
+						timefmt model.time
+			if model.signature
+				li class="list-group-item form-group"
+					label.control-label.col-md-2.col-sm-12 for="signature" 签字
+					.col-md-8.col-sm-12
+						p.form-control-static
+							base64-img model.signature.sign
+						
+
+= outlet

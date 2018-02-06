@@ -1,0 +1,76 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	.panel
+		.panel-heading.text-center
+			h3.panel-title
+				if equipment.isXs
+					a.btn-back.pull-left{action "goBack"}  title="返回" href='javascript:void(0)'
+						.glyphicon.glyphicon-arrow-left
+						label.sr-only 返回
+				a.btn-back.pull-right.hidden-print{action "goFilter"}  title="筛选" href='javascript:void(0)'
+					span.glyphicon.glyphicon-filter class="{{if isFiltered 'text-warning'}}"
+					label.sr-only 筛选
+				if model.length
+					a.btn-print.pull-right.hidden-print.hidden-xs.margin-right  target="_blank" title="打印" href='print.html'
+						span.glyphicon.glyphicon-print
+						label.sr-only 打印
+					spin-button action="export" isIcon=true loadedIcon="glyphicon-export" isLoading=isExporting isDisabled=isExporting class="btn-export pull-right margin-right is-blank hidden-print hidden-xs" title="导出"
+				=pannelTitle
+		.panel-scroll
+			.list-group.list-full
+				if isFiltered
+					.well.well-full.well-sm.text-center
+						span.glyphicon.glyphicon-info-sign.split-right.text-warning
+						span.text-warning
+							=filterText
+				if model.length
+					.table-responsive.reports-box
+						table.table.table-bordered.table2excel
+							thead
+								tr
+									th rowspan="2" 项目名称
+									each oils as |oil|
+										th colspan="{{departments.length}}"
+											=oil.name
+									th colspan="{{oils.length}}" 开票数量
+								tr
+									each oils as |oil|
+										each departments as |department|
+											th
+												=department.name
+									each oils as |oil|
+										th
+											=oil.name
+							tbody
+								each projects as |project|
+									tr
+										td
+											=project.name
+										each oils as |oil|
+											each departments as |department|
+												td title="项目[{{project.name}}]，油品[{{oil.name}}]，部门[{{department.name}}]"
+													report-compute model project=project oil=oil department=department
+										each oils as |oil|
+											td title="项目[{{project.name}}]，油品[{{oil.name}}]"
+												report-compute model project=project oil=oil
+							tfoot
+								tr
+									th 合计数量
+									each oils as |oil|
+										each departments as |department|
+											th title="油品[{{oil.name}}]，部门[{{department.name}}]"
+												report-compute model oil=oil department=department
+									each oils as |oil|
+										th title="油品[{{oil.name}}]"
+											report-compute model oil=oil
+				else
+					.empty-box
+						.glyphicon.glyphicon-road
+						.empty-title 没有找到数据
+
+
+
+
+
+
+
+

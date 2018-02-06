@@ -1,0 +1,27 @@
+navigable-pane routeName=routeName isActive=true isBack=false isHide=false
+	detail-panel pannelTitle=pannelTitle isLeftButtonNeeded=true
+		ul.list-group.list-full.form-horizontal
+			li class="list-group-item form-group has-feedback {{if model.errors.new_password.length 'has-error'}}"
+				label.control-label.col-md-2.col-sm-12 for="new_password" 将密码重置为
+				.col-md-8.col-sm-12
+					=input id="new_password" type="text" class="form-control" value=model.new_password
+					if model.errors.new_password
+						span.glyphicon.glyphicon-remove.form-control-feedback
+					each model.errors.new_password as |error|
+						.help-block.text-danger
+							=error.message
+			
+		ul.list-group.list-full
+			.help-block.text-center
+				|保存后用户[
+				=model.userObject.name
+				|]的密码将被重置为:
+				=model.new_password
+			spin-button action="save" isLoading=isSaving disabled=isUnSavable class="btn btn-info btn-block" title="保存"
+			button.btn.btn-default.btn-block{action 'cancel'} 取消
+
+
+
+=partial "common-alert"
+
+=outlet

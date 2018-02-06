@@ -1,0 +1,92 @@
+.container-side.trans-all-05 class="{{unless applicationController.isSideActive 'is-folded'}}"
+	container-wrap isFull=true isBoxShadow=true
+		navigable-pane routeName=routeName isActive=true isBack=false isHide=false
+			if applicationController.isBellActive
+				list-panel class="panel-primary" pannelTitle="通知中心" isTopButtonNeeded=messagesController.isTopButtonNeeded isToShowAll=messagesController.isToShowAll rightButtonIcon="glyphicon-triangle-left" rightButtonAction="exitSide" isLeftButtonNeeded=false isRightButtonNeeded=true isSearchBoxNeeded=false content=messagesController.arrangedResult as |item|
+					list-panel-item content=item isNeedToCheckNew=false action="goMessageTarget" as |isChecked|
+						if item.icon
+							span.glyphicon.pull-left class="{{item.icon}} {{item.color}}"
+						if item.instance.isFinished
+							span.pull-left.glyphicon.glyphicon-cloud-upload.text-danger
+						else if item.instance.isFinishing
+							span.pull-left.glyphicon.glyphicon-cloud-upload.text-warning
+						=item.title
+						span.pull-right.text-muted
+							timefmt item.created_date
+						.message-text.text-muted
+							=item.text
+			else
+				detail-panel class="panel-primary" pannelTitle="关于我们" rightButtonIcon="glyphicon-triangle-left" rightButtonAction="exitSide" isLeftButtonNeeded=false isRightButtonNeeded=true
+					.list-group.list-full
+						if sessionController.isLogined
+							.list-group-item
+								span.glyphicon.glyphicon-user.text-success.pull-left
+								span.text-success 
+									=sessionController.user.name
+							.list-group-item
+								span.glyphicon.glyphicon-education.text-success.pull-left
+								span.text-success 
+									=sessionController.user.role.name
+						else
+							.list-group-item
+								span.text-muted 
+									|您还没有登录
+
+					.list-group.list-full
+						.list-group-item 
+							=applicationController.appShortTitle
+						.list-group-item 
+							=applicationController.author
+						.list-group-item 
+							=applicationController.copyright
+						.list-group-item 
+							=applicationController.version
+
+					.list-group.list-full
+						.list-group-item 
+							.pull-left
+								span.glyphicon.glyphicon-blackboard.split-right-6
+								|远程调式
+							.pull-right
+								radio-list content=applicationController.remoteDebugList value=applicationController.remoteDebugStatus contentValueKey="value" isEditing=true as |item value|
+									radio-list-item content=item contentValueKey="value" compareto=value action="setRemoteDebugStatus" as |isChecked|
+										if isChecked
+											span.text-success
+												span.glyphicon.glyphicon-ok
+												=item.name
+										else
+											span.text-muted
+												=item.name
+						.list-group-item
+							if applicationController.isWeinreDebugging
+								.text-muted
+									=applicationController.remoteDebugUrl
+								.help-block.text-warning
+									|调试完成后请务必刷新网页或重启APP以保证后续正常工作。
+							else if applicationController.isDebuggapDebugging
+								.help-block.text-warning
+									|调试完成后请务必刷新网页或重启APP以保证后续正常工作。
+							else
+								=input type="text" class="form-control" value=applicationController.remoteDebugUrl
+								.help-block.text-muted
+									|请输入正确的远程调试电脑地址后点击启用按钮来调试，调试完成后请务必刷新网页或重启APP以保证后续正常工作。
+
+
+
+					if sessionController.isLogined
+						.list-group.list-full
+							.list-group-item.text-center
+								span.glyphicon.glyphicon-cloud-download.split-right-6
+								|同步数据
+								.text-muted
+									|于[
+									=applicationController.serializedSyncToken
+									|]成功同步
+						.list-group.list-full
+							button.btn.btn-danger.btn-block{action "logout"} 退出系统
+
+
+
+
+
+

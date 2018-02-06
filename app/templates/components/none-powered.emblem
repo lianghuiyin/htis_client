@@ -1,0 +1,18 @@
+container-wrap
+	navigable-pane routeName="none-powered" isActive=true
+		.panel
+			.panel-heading.text-center
+				h3.panel-title
+					a.btn-back.pull-left{action "backAction"}  title="返回主页" href='javascript:void(0)'
+						div class="glyphicon glyphicon-arrow-left"
+						label.sr-only 返回主页
+					=title
+			.panel-scroll
+				.fix-icon
+					.glyphicon.glyphicon-ban-circle
+					.icon-title.text-danger
+						span
+							=tooltip
+
+
+

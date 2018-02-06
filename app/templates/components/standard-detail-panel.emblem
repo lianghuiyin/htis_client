@@ -1,0 +1,22 @@
+.panel-heading.text-center
+	h3.panel-title
+		if isLeftButtonNeeded
+			a.btn-back.pull-left{action "backAction"}  title="返回" href='javascript:void(0)'
+				.glyphicon.glyphicon-arrow-left
+				label.sr-only 返回
+		if isRightButtonNeeded
+			if isEditing
+				a.btn-back.pull-right{action "cancelAction"}  title="取消" href='javascript:void(0)'
+					.glyphicon.glyphicon-remove
+					label.sr-only 取消
+				spin-button action="saveAction" isIcon=true loadedIcon="glyphicon-floppy-disk" isLoading=model.isSaving isDisabled=model.isUnSavable class="btn-save pull-right margin-right is-blank" title="保存"
+			else
+				a.btn-back.pull-right{action "deleteAction"}  title="删除" href='javascript:void(0)'
+					.glyphicon.glyphicon-trash
+					label.sr-only 删除
+				a.btn-back.pull-right.margin-right{action "editAction"}  title="修改" href='javascript:void(0)'
+					.glyphicon.glyphicon-edit
+					label.sr-only 修改
+		=pannelTitle
+.panel-scroll
+	=yield

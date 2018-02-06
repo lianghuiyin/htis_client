@@ -1,0 +1,4 @@
+.btn-group.btn-group-vertical data-toggle="buttons"
+	each content as |item|
+		=yield item selection
+

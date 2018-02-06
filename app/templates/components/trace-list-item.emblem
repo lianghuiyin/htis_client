@@ -1,0 +1,105 @@
+.trace-icon
+	span.glyphicon class="{{if content.is_finished 'glyphicon-ok-sign' 'glyphicon-record opacity05'}}"
+if content.previous_trace
+	.bg-line class="{{if content.is_finished 'opacity05'}}"
+.trace-title
+	span
+		=text
+	span.pull-right.glyphicon class="{{icon}}"
+.trace-content.text-muted
+	if isChecked
+		ul.list-group.list-full.form-horizontal
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 系统编号
+				.col-md-10.col-sm-12
+					p.form-control-static
+						content.id
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 所属项目
+				.col-md-10.col-sm-12
+					p.form-control-static
+						content.project.name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 使用部门
+				.col-md-10.col-sm-12
+					p.form-control-static
+						content.department.name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 使用人
+				.col-md-10.col-sm-12
+					p.form-control-static
+						content.user_name
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 油品
+				.col-md-10.col-sm-12
+					p.form-control-static
+						checkbox-list-value content=content.oils
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 实验目的
+				.col-md-10.col-sm-12
+					p.form-control-static
+						content.goal
+			li class="list-group-item form-group"
+				label.control-label.col-md-2.col-sm-12 起止时间
+				.col-md-10.col-sm-12
+					p.form-control-static
+						date-picker-value startDate=content.start_date endDate=content.end_date
+			li.list-group-item.form-group
+				label.control-label.col-md-2.col-sm-12
+					=createrTag
+					|人
+				.col-md-10.col-sm-12
+					p.form-control-static
+						=content.creater.name
+			li.list-group-item.form-group
+				label.control-label.col-md-2.col-sm-12
+					=createrTag
+					|时间
+				.col-md-10.col-sm-12
+					p.form-control-static
+						timefmt content.created_date
+			if content.start_info
+				li.list-group-item.form-group
+					label.control-label.col-md-2.col-sm-12
+						=createrTag
+						|消息
+					.col-md-10.col-sm-12
+						p.form-control-static
+							=content.start_info
+			if isModifierNeeded
+				li.list-group-item.form-group
+					label.control-label.col-md-2.col-sm-12
+						=modifierTag
+						|人
+					.col-md-10.col-sm-12
+						p.form-control-static
+							=content.modifier.name
+				li.list-group-item.form-group
+					label.control-label.col-md-2.col-sm-12 
+						=modifierTag
+						|时间
+					.col-md-10.col-sm-12
+						p.form-control-static
+							timefmt content.modified_date
+				if content.end_info
+					li.list-group-item.form-group
+						label.control-label.col-md-2.col-sm-12
+							=modifierTag
+							|消息
+						.col-md-10.col-sm-12
+							p.form-control-static
+								=content.end_info
+	else
+		span.trace-user.pull-left
+			=content.modifier.name
+		span.trace-date.pull-right.hidden-xs
+			timefmt content.modified_date
+		span.trace-date.visible-xs-block
+			timefmt content.modified_date
+		.trace-msg.clearboth
+			if content.end_info
+				=content.end_info
+			else
+				unless isModifierNeeded
+					=content.start_info
+

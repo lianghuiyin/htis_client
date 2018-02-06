@@ -1,0 +1,62 @@
+=partial "container-side"
+#setting.container-main.opacity09.trans-all-05 class="{{if applicationController.isSideActive 'is-folded'}}"
+	if isPowered
+		container-wrap isLeft=equipment.isNotXs
+			navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+				.panel
+					.panel-heading.text-center
+						h3.panel-title
+							a.btn-home.pull-left{action "goHome"}  title="返回主页" href='javascript:void(0)'
+								.glyphicon.glyphicon-home
+								label.sr-only 返回
+							a.btn-bell.pull-right{action "goBell"}  title="通知中心" href='javascript:void(0)'
+								.bell-count
+									=messagesController.model.length
+								.glyphicon.glyphicon-bell
+								label.sr-only 通知中心
+							=pannelTitle
+					.panel-scroll
+						.list-group.list-full
+							a{action "goRoles"} class="list-group-item {{if isRoles 'active'}}"
+								span.title 角色管理
+								span.glyphicon.glyphicon-book.pull-left
+								if isRoles
+									span.glyphicon.glyphicon-bookmark.pull-right
+							a{action "goUsers"} class="list-group-item {{if isUsers 'active'}}"
+								span.title 用户管理
+								span.glyphicon.glyphicon-book.pull-left
+								if isUsers
+									span.glyphicon.glyphicon-bookmark.pull-right
+							a{action "goProjects"} class="list-group-item {{if isProjects 'active'}}"
+								span.title 项目管理
+								span.glyphicon.glyphicon-book.pull-left
+								if isProjects
+									span.glyphicon.glyphicon-bookmark.pull-right
+							a{action "goDepartments"} class="list-group-item {{if isDepartments 'active'}}"
+								span.title 部门管理
+								span.glyphicon.glyphicon-book.pull-left
+								if isDepartments
+									span.glyphicon.glyphicon-bookmark.pull-right
+							a{action "goOils"} class="list-group-item {{if isOils 'active'}}"
+								span.title 油品管理
+								span.glyphicon.glyphicon-book.pull-left
+								if isOils
+									span.glyphicon.glyphicon-bookmark.pull-right
+							a{action "goPreference"} class="list-group-item {{if isPreference 'active'}}"
+								span.title 偏好设置
+								span.glyphicon.glyphicon-book.pull-left
+								if isPreference
+									span.glyphicon.glyphicon-bookmark.pull-right
+			if equipment.isXs
+				=outlet
+		if equipment.isNotXs
+			=outlet
+	else
+		none-powered action="goHome"
+
+
+
+
+
+
+

@@ -1,0 +1,10 @@
+navigable-pane routeName=routeName isActive=isActive isBack=isBack isHide=isHide
+	list-panel pannelTitle=pannelTitle isMoreButtonNeeded=isMoreButtonNeeded isTopButtonNeeded=isTopButtonNeeded isToShowAll=isToShowAll errors=errors isLeftButtonNeeded=equipment.isXs searchKey=searchKey content=arrangedResult as |item|
+		list-panel-item content=item compareto=selection action="goItem" as |isChecked|
+			=item.name
+			.glyphicon.glyphicon-chevron-right.pull-right
+			.pull-right
+				if item.is_enable
+					span.text-success 已启用
+				else
+					span.text-danger 已暂停

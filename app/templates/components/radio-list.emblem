@@ -1,0 +1,7 @@
+div class="btn-group {{if isVertical 'btn-group-vertical'}}" data-toggle="buttons"
+	if isEditing
+		each content as |item|
+			=yield item value
+	else
+		=yield checkedContent
+

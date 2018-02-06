@@ -1,0 +1,7 @@
+=partial "container-side"
+#online.container-main.opacity09.trans-all-05 class="{{if applicationController.isSideActive 'is-folded'}}"
+	container-wrap isFull=true
+		navigable-pane routeName=routeName isActive=true isBack=false isHide=false
+			list-panel class="panel-primary" pannelTitle=pannelTitle isSearchBoxNeeded=false isRightButtonNeeded=false content=arrangedResult as |bill|
+				.col-md-6.col-sm-12
+					=partial "online-item"

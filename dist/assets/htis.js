@@ -1005,6 +1005,31 @@ define("htis/components/trace-list-item", ["exports", "ember"], function (export
 		}
 	});
 });
+define('htis/controllers/account', ['exports', 'ember', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _htisMixinsNavigablePaneController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
+        routeName: "account.index",
+        applicationController: _ember['default'].inject.controller('application'),
+        sessionController: _ember['default'].inject.controller('session'),
+        modelTitle: "账户",
+        pannelTitle: "账户设置",
+        helpInfo: "帮助信息",
+        actions: {}
+    });
+});
+// import Ember from 'ember';
+
+// export default Ember.Controller.extend({
+//     routeName:"account.index",
+//     applicationController:Ember.inject.controller('application'),
+// 	sessionController:Ember.inject.controller('session'),
+// 	isActive:false,
+// 	isBack:false,
+//     modelTitle:"账户",
+//     pannelTitle:"账户设置",
+//     helpInfo:"帮助信息",
+//     actions:{
+//     }
+// });
 define('htis/controllers/account/info', ['exports', 'ember', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _htisMixinsNavigablePaneController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
         routeName: "account.info",
@@ -1114,31 +1139,6 @@ define('htis/controllers/account/pwd', ['exports', 'ember', 'htis/mixins/navigab
 //             model.rollbackAttributes();
 //             this.store.unloadRecord(model);
 //         }
-//     }
-// });
-define('htis/controllers/account', ['exports', 'ember', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _htisMixinsNavigablePaneController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
-        routeName: "account.index",
-        applicationController: _ember['default'].inject.controller('application'),
-        sessionController: _ember['default'].inject.controller('session'),
-        modelTitle: "账户",
-        pannelTitle: "账户设置",
-        helpInfo: "帮助信息",
-        actions: {}
-    });
-});
-// import Ember from 'ember';
-
-// export default Ember.Controller.extend({
-//     routeName:"account.index",
-//     applicationController:Ember.inject.controller('application'),
-// 	sessionController:Ember.inject.controller('session'),
-// 	isActive:false,
-// 	isBack:false,
-//     modelTitle:"账户",
-//     pannelTitle:"账户设置",
-//     helpInfo:"帮助信息",
-//     actions:{
 //     }
 // });
 define('htis/controllers/application', ['exports', 'ember'], function (exports, _ember) {
@@ -1330,6 +1330,183 @@ define('htis/controllers/changeset', ['exports', 'ember'], function (exports, _e
                     if (count < times) {
                         player.play();
                     }
+                });
+            }
+        }
+    });
+});
+define('htis/controllers/history', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        routeName: "history.index",
+        equipment: _ember['default'].inject.service('equipment'),
+        applicationController: _ember['default'].inject.controller('application'),
+        sessionController: _ember['default'].inject.controller('session'),
+        messagesController: _ember['default'].inject.controller('messages'),
+        pannelTitle: "加油单",
+        isActive: false,
+        isBack: false,
+        selection: null,
+        isHide: false,
+        isPowered: _ember['default'].computed("sessionController.isLogined", function () {
+            return this.get("sessionController.isLogined");
+        }),
+        // runLaterForHide:null,
+        // isBackDidChange:Ember.observer("isBack",function(){
+        //     //退出后要把div隐藏来减少内存消耗
+        //     if(this.get("isBack")){
+        //         if(Ember.$.support.transition){
+        //             Ember.run.cancel(this.runLaterForHide);
+        //             this.runLaterForHide = Ember.run.later(()=>{
+        //                 if(this.get("isBack")){
+        //                     this.set("isHide",true);
+        //                 }
+        //             },3000);
+        //         }
+        //         else{
+        //             this.set("isHide",true);
+        //         }
+        //     }
+        // }),
+        equipmentIsXsDidChange: _ember['default'].observer("equipment.isXs", function () {
+            //当浏览器大小变化造成从手机模式变成非手机模式时需要保证列表中至少有一个选中
+            if (this.get("isActive") && this.get("equipment.isNotXs") && this.get("selection") === null) {
+                this.send("goBills");
+            }
+        }),
+        isBills: _ember['default'].computed('selection', function () {
+            return this.get('selection') === 'bills';
+        }),
+        isReports: _ember['default'].computed('selection', function () {
+            return this.get('selection') === 'reports';
+        }),
+        actions: {}
+    });
+});
+define('htis/controllers/history/bills', ['exports', 'ember', 'ember-data', 'htis/mixins/standard-list/controller'], function (exports, _ember, _emberData, _htisMixinsStandardListController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], {
+        modelName: "bill",
+        routeName: "history.bills",
+        modelTitle: "加油单",
+        parentController: _ember['default'].inject.controller('history'),
+        parentRouteName: "history",
+        pannelTitle: "加油单明细",
+        allArrangedResult: _ember['default'].computed.sort('filteredResult', 'createdDateSorting'),
+        filterOption: null,
+        lastId: 0,
+        errors: _emberData['default'].Errors.create(),
+        filterText: _ember['default'].computed("filterOption", function () {
+            var filterOption = this.get("filterOption");
+            if (filterOption) {
+                var projectText = filterOption.get("project.name");
+                var departmentText = filterOption.get("department.name");
+                var results = [];
+                if (projectText) {
+                    results.push(projectText);
+                }
+                if (departmentText) {
+                    results.push(departmentText);
+                }
+                results.push(filterOption.get("startDate").format('yyyy-MM-dd') + '➡' + filterOption.get("endDate").format('yyyy-MM-dd'));
+                return results.join(",");
+            } else {
+                return "";
+            }
+        }),
+        isFiltered: _ember['default'].computed("filterOption", function () {
+            return this.get("filterOption") !== null;
+        }),
+        filteredResult: _ember['default'].computed("model.length", "searchKey", function () {
+            var searchKey = this.get("searchKey").toLowerCase();
+            searchKey = searchKey.replace(/\\/g, "");
+            var arrangedContent = this.get("model.arrangedContent");
+            if (!arrangedContent) {
+                return [];
+            }
+            if (searchKey) {
+                return arrangedContent.mapBy("record").filterBy("id", searchKey);
+            } else {
+                return arrangedContent.mapBy("record");
+            }
+        }),
+        actions: {
+            filter: function filter() {
+                this.send("goFilter");
+            },
+            fetchNext: function fetchNext() {
+                var _this = this;
+
+                this.get("errors").remove('server_side_error');
+                this.set("isToShowAll", true);
+                var filterOption = this.get("filterOption");
+                var project = filterOption.get("project");
+                var department = filterOption.get("department");
+                var startDate = filterOption.get("startDate");
+                var endDate = filterOption.get("endDate");
+                this.set("isSearching", true);
+                var pageCount = this.get("pageCount");
+                var lastId = this.get("lastId");
+                this.store.query('bill', {
+                    count: pageCount,
+                    project: project ? project.get("id") : null,
+                    department: department ? department.get("id") : null,
+                    startDate: startDate.format('yyyy-MM-dd hh:mm:ss'),
+                    endDate: endDate.format('yyyy-MM-dd hh:mm:ss'),
+                    lastId: lastId
+                }).then(function (answer) {
+                    var bills = answer.toArray();
+                    if (bills.length > 0) {
+                        var minId = bills.mapBy("id").sort(function (a, b) {
+                            return parseInt(a) - parseInt(b);
+                        }).get("firstObject");
+                        _this.set("lastId", minId);
+                    }
+                    if (bills.length < pageCount) {
+                        _this.set("isMoreButtonNeeded", false);
+                    } else {
+                        _this.set("isMoreButtonNeeded", true);
+                    }
+                    _this.set("isSearching", false);
+                }, function (reason) {
+                    if (reason.errors) {
+                        var error = reason.errors.objectAt(0);
+                        var errorMsg = error.detail;
+                        var recordErrors = _this.get("errors");
+                        recordErrors.add(_ember['default'].String.underscore("ServerSideError"), errorMsg);
+                    }
+                    _this.set("isSearching", false);
+                });
+            },
+            clearBills: function clearBills() {
+                this.store.unloadAll("bill");
+                this.store.unloadAll("signature");
+            },
+            enterSearch: function enterSearch(searchKey) {
+                var _this2 = this;
+
+                if (searchKey.length === 0) {
+                    return;
+                }
+                if (this.store.peekRecord("bill", searchKey)) {
+                    //本地存在则不重新请求
+                    return;
+                }
+
+                this.set("lastId", 0);
+                this.set("isMoreButtonNeeded", false);
+                this.send("clearBills");
+                this.get("errors").clear();
+                this.set("filterOption", null);
+                this.set("isSearching", true);
+                this.store.find("bill", searchKey).then(function () {
+                    _this2.set("isSearching", false);
+                }, function (reason) {
+                    if (reason.errors) {
+                        var error = reason.errors.objectAt(0);
+                        var errorMsg = error.detail;
+                        var recordErrors = _this2.get("errors");
+                        recordErrors.add(_ember['default'].String.underscore("ServerSideError"), errorMsg);
+                    }
+                    _this2.set("isSearching", false);
                 });
             }
         }
@@ -1647,18 +1824,21 @@ define('htis/controllers/history/bills/filter', ['exports', 'ember', 'ember-data
         }
     });
 });
-define('htis/controllers/history/bills', ['exports', 'ember', 'ember-data', 'htis/mixins/standard-list/controller'], function (exports, _ember, _emberData, _htisMixinsStandardListController) {
+define('htis/controllers/history/reports', ['exports', 'ember', 'ember-data', 'htis/mixins/standard-list/controller'], function (exports, _ember, _emberData, _htisMixinsStandardListController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], {
-        modelName: "bill",
-        routeName: "history.bills",
-        modelTitle: "加油单",
+        applicationController: _ember['default'].inject.controller('application'),
+        modelName: "report",
+        routeName: "history.reports",
+        modelTitle: "加油单报表",
         parentController: _ember['default'].inject.controller('history'),
         parentRouteName: "history",
-        pannelTitle: "加油单明细",
-        allArrangedResult: _ember['default'].computed.sort('filteredResult', 'createdDateSorting'),
+        pannelTitle: "加油单报表",
+        allArrangedResult: null,
+        arrangedResult: null,
+        filteredResult: null,
         filterOption: null,
-        lastId: 0,
         errors: _emberData['default'].Errors.create(),
+        isExporting: false,
         filterText: _ember['default'].computed("filterOption", function () {
             var filterOption = this.get("filterOption");
             if (filterOption) {
@@ -1666,12 +1846,12 @@ define('htis/controllers/history/bills', ['exports', 'ember', 'ember-data', 'hti
                 var departmentText = filterOption.get("department.name");
                 var results = [];
                 if (projectText) {
-                    results.push(projectText);
+                    results.push('项目为[' + projectText + ']');
                 }
                 if (departmentText) {
-                    results.push(departmentText);
+                    results.push('部门为[' + departmentText + ']');
                 }
-                results.push(filterOption.get("startDate").format('yyyy-MM-dd') + '➡' + filterOption.get("endDate").format('yyyy-MM-dd'));
+                results.push('时间范围为[' + filterOption.get("startDate").format('yyyy-MM-dd') + '➡' + filterOption.get("endDate").format('yyyy-MM-dd') + ']');
                 return results.join(",");
             } else {
                 return "";
@@ -1680,99 +1860,55 @@ define('htis/controllers/history/bills', ['exports', 'ember', 'ember-data', 'hti
         isFiltered: _ember['default'].computed("filterOption", function () {
             return this.get("filterOption") !== null;
         }),
-        filteredResult: _ember['default'].computed("model.length", "searchKey", function () {
-            var searchKey = this.get("searchKey").toLowerCase();
-            searchKey = searchKey.replace(/\\/g, "");
-            var arrangedContent = this.get("model.arrangedContent");
-            if (!arrangedContent) {
-                return [];
-            }
-            if (searchKey) {
-                return arrangedContent.mapBy("record").filterBy("id", searchKey);
-            } else {
-                return arrangedContent.mapBy("record");
-            }
+        allProjects: _ember['default'].computed(function () {
+            return this.store.peekAll("project");
+        }),
+        allDepartments: _ember['default'].computed(function () {
+            return this.store.peekAll("department");
+        }),
+        allOils: _ember['default'].computed(function () {
+            return this.store.peekAll("oil");
+        }),
+        projects: _ember['default'].computed("model.length", "allProjects.length", function () {
+            var model = this.get("model");
+            var allProjects = this.get("allProjects");
+            var projects = allProjects.filter(function (project) {
+                return model.filterBy("project.id", project.get("id")).length;
+            });
+            return projects;
+        }),
+        departments: _ember['default'].computed("model.length", "allDepartments.length", function () {
+            var model = this.get("model");
+            var allDepartments = this.get("allDepartments");
+            var departments = allDepartments.filter(function (department) {
+                return model.filterBy("department.id", department.get("id")).length;
+            });
+            return departments;
+        }),
+        oils: _ember['default'].computed("model.length", "allOils.length", function () {
+            var model = this.get("model");
+            var allOils = this.get("allOils");
+            var oils = allOils.filter(function (oil) {
+                return model.filterBy("oil.id", oil.get("id")).length;
+            });
+            return oils;
         }),
         actions: {
             filter: function filter() {
                 this.send("goFilter");
             },
-            fetchNext: function fetchNext() {
-                var _this = this;
-
-                this.get("errors").remove('server_side_error');
-                this.set("isToShowAll", true);
-                var filterOption = this.get("filterOption");
-                var project = filterOption.get("project");
-                var department = filterOption.get("department");
-                var startDate = filterOption.get("startDate");
-                var endDate = filterOption.get("endDate");
-                this.set("isSearching", true);
-                var pageCount = this.get("pageCount");
-                var lastId = this.get("lastId");
-                this.store.query('bill', {
-                    count: pageCount,
-                    project: project ? project.get("id") : null,
-                    department: department ? department.get("id") : null,
-                    startDate: startDate.format('yyyy-MM-dd hh:mm:ss'),
-                    endDate: endDate.format('yyyy-MM-dd hh:mm:ss'),
-                    lastId: lastId
-                }).then(function (answer) {
-                    var bills = answer.toArray();
-                    if (bills.length > 0) {
-                        var minId = bills.mapBy("id").sort(function (a, b) {
-                            return parseInt(a) - parseInt(b);
-                        }).get("firstObject");
-                        _this.set("lastId", minId);
-                    }
-                    if (bills.length < pageCount) {
-                        _this.set("isMoreButtonNeeded", false);
-                    } else {
-                        _this.set("isMoreButtonNeeded", true);
-                    }
-                    _this.set("isSearching", false);
-                }, function (reason) {
-                    if (reason.errors) {
-                        var error = reason.errors.objectAt(0);
-                        var errorMsg = error.detail;
-                        var recordErrors = _this.get("errors");
-                        recordErrors.add(_ember['default'].String.underscore("ServerSideError"), errorMsg);
-                    }
-                    _this.set("isSearching", false);
-                });
+            clearReports: function clearReports() {
+                this.store.unloadAll("report");
             },
-            clearBills: function clearBills() {
-                this.store.unloadAll("bill");
-                this.store.unloadAll("signature");
-            },
-            enterSearch: function enterSearch(searchKey) {
-                var _this2 = this;
-
-                if (searchKey.length === 0) {
-                    return;
-                }
-                if (this.store.peekRecord("bill", searchKey)) {
-                    //本地存在则不重新请求
-                    return;
-                }
-
-                this.set("lastId", 0);
-                this.set("isMoreButtonNeeded", false);
-                this.send("clearBills");
-                this.get("errors").clear();
-                this.set("filterOption", null);
-                this.set("isSearching", true);
-                this.store.find("bill", searchKey).then(function () {
-                    _this2.set("isSearching", false);
-                }, function (reason) {
-                    if (reason.errors) {
-                        var error = reason.errors.objectAt(0);
-                        var errorMsg = error.detail;
-                        var recordErrors = _this2.get("errors");
-                        recordErrors.add(_ember['default'].String.underscore("ServerSideError"), errorMsg);
-                    }
-                    _this2.set("isSearching", false);
+            'export': function _export() {
+                var table2excel = window.$(".table2excel").clone();
+                table2excel.find("td").css("text-align", "center");
+                var fileName = this.get("applicationController.appTitle") + "-" + this.get("pannelTitle") + "-" + this.get("filterText");
+                table2excel.table2excel({
+                    fileName: fileName,
+                    fileExt: ".xls"
                 });
+                table2excel = null;
             }
         }
     });
@@ -1885,142 +2021,6 @@ define('htis/controllers/history/reports/filter', ['exports', 'ember', 'ember-da
         }
     });
 });
-define('htis/controllers/history/reports', ['exports', 'ember', 'ember-data', 'htis/mixins/standard-list/controller'], function (exports, _ember, _emberData, _htisMixinsStandardListController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], {
-        applicationController: _ember['default'].inject.controller('application'),
-        modelName: "report",
-        routeName: "history.reports",
-        modelTitle: "加油单报表",
-        parentController: _ember['default'].inject.controller('history'),
-        parentRouteName: "history",
-        pannelTitle: "加油单报表",
-        allArrangedResult: null,
-        arrangedResult: null,
-        filteredResult: null,
-        filterOption: null,
-        errors: _emberData['default'].Errors.create(),
-        isExporting: false,
-        filterText: _ember['default'].computed("filterOption", function () {
-            var filterOption = this.get("filterOption");
-            if (filterOption) {
-                var projectText = filterOption.get("project.name");
-                var departmentText = filterOption.get("department.name");
-                var results = [];
-                if (projectText) {
-                    results.push('项目为[' + projectText + ']');
-                }
-                if (departmentText) {
-                    results.push('部门为[' + departmentText + ']');
-                }
-                results.push('时间范围为[' + filterOption.get("startDate").format('yyyy-MM-dd') + '➡' + filterOption.get("endDate").format('yyyy-MM-dd') + ']');
-                return results.join(",");
-            } else {
-                return "";
-            }
-        }),
-        isFiltered: _ember['default'].computed("filterOption", function () {
-            return this.get("filterOption") !== null;
-        }),
-        allProjects: _ember['default'].computed(function () {
-            return this.store.peekAll("project");
-        }),
-        allDepartments: _ember['default'].computed(function () {
-            return this.store.peekAll("department");
-        }),
-        allOils: _ember['default'].computed(function () {
-            return this.store.peekAll("oil");
-        }),
-        projects: _ember['default'].computed("model.length", "allProjects.length", function () {
-            var model = this.get("model");
-            var allProjects = this.get("allProjects");
-            var projects = allProjects.filter(function (project) {
-                return model.filterBy("project.id", project.get("id")).length;
-            });
-            return projects;
-        }),
-        departments: _ember['default'].computed("model.length", "allDepartments.length", function () {
-            var model = this.get("model");
-            var allDepartments = this.get("allDepartments");
-            var departments = allDepartments.filter(function (department) {
-                return model.filterBy("department.id", department.get("id")).length;
-            });
-            return departments;
-        }),
-        oils: _ember['default'].computed("model.length", "allOils.length", function () {
-            var model = this.get("model");
-            var allOils = this.get("allOils");
-            var oils = allOils.filter(function (oil) {
-                return model.filterBy("oil.id", oil.get("id")).length;
-            });
-            return oils;
-        }),
-        actions: {
-            filter: function filter() {
-                this.send("goFilter");
-            },
-            clearReports: function clearReports() {
-                this.store.unloadAll("report");
-            },
-            'export': function _export() {
-                var table2excel = window.$(".table2excel").clone();
-                table2excel.find("td").css("text-align", "center");
-                var fileName = this.get("applicationController.appTitle") + "-" + this.get("pannelTitle") + "-" + this.get("filterText");
-                table2excel.table2excel({
-                    fileName: fileName,
-                    fileExt: ".xls"
-                });
-                table2excel = null;
-            }
-        }
-    });
-});
-define('htis/controllers/history', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Controller.extend({
-        routeName: "history.index",
-        equipment: _ember['default'].inject.service('equipment'),
-        applicationController: _ember['default'].inject.controller('application'),
-        sessionController: _ember['default'].inject.controller('session'),
-        messagesController: _ember['default'].inject.controller('messages'),
-        pannelTitle: "加油单",
-        isActive: false,
-        isBack: false,
-        selection: null,
-        isHide: false,
-        isPowered: _ember['default'].computed("sessionController.isLogined", function () {
-            return this.get("sessionController.isLogined");
-        }),
-        // runLaterForHide:null,
-        // isBackDidChange:Ember.observer("isBack",function(){
-        //     //退出后要把div隐藏来减少内存消耗
-        //     if(this.get("isBack")){
-        //         if(Ember.$.support.transition){
-        //             Ember.run.cancel(this.runLaterForHide);
-        //             this.runLaterForHide = Ember.run.later(()=>{
-        //                 if(this.get("isBack")){
-        //                     this.set("isHide",true);
-        //                 }
-        //             },3000);
-        //         }
-        //         else{
-        //             this.set("isHide",true);
-        //         }
-        //     }
-        // }),
-        equipmentIsXsDidChange: _ember['default'].observer("equipment.isXs", function () {
-            //当浏览器大小变化造成从手机模式变成非手机模式时需要保证列表中至少有一个选中
-            if (this.get("isActive") && this.get("equipment.isNotXs") && this.get("selection") === null) {
-                this.send("goBills");
-            }
-        }),
-        isBills: _ember['default'].computed('selection', function () {
-            return this.get('selection') === 'bills';
-        }),
-        isReports: _ember['default'].computed('selection', function () {
-            return this.get('selection') === 'reports';
-        }),
-        actions: {}
-    });
-});
 define('htis/controllers/login', ['exports', 'ember'], function (exports, _ember) {
     exports['default'] = _ember['default'].Controller.extend({
         routeName: "login.index",
@@ -2048,299 +2048,6 @@ define('htis/controllers/login', ['exports', 'ember'], function (exports, _ember
                 });
             }
         }
-    });
-});
-define('htis/controllers/manage/archives/archive', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
-        routeName: "manage.archives.archive",
-        modelTitle: "车辆",
-        parentController: _ember['default'].inject.controller('manage.archives'),
-        parentRouteName: "manage.archives",
-        isBaseFolded: true,
-        isInstancesFolded: false,
-        actions: {}
-    });
-});
-define('htis/controllers/manage/archives/index', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Controller.extend({
-        equipment: _ember['default'].inject.service('equipment')
-    });
-});
-define('htis/controllers/manage/archives', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller', 'htis/mixins/archive-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController, _htisMixinsArchiveCarsController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], _htisMixinsArchiveCarsController['default'], {
-        modelName: "archive",
-        routeName: "manage.archives",
-        parentController: _ember['default'].inject.controller('manage'),
-        parentRouteName: "manage",
-        pannelTitle: _ember['default'].computed(function () {
-            return "已闲置";
-        }),
-        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
-        pickedResult: _ember['default'].computed("filteredResult.@each.is_archived", "isFiltered", function () {
-            var isFiltered = this.get("isFiltered");
-            var results = this.get("filteredResult").filterBy("is_archived", true);
-            if (isFiltered) {
-                return results.filterBy("isOwn", true);
-            } else {
-                return results;
-            }
-        })
-    });
-});
-define('htis/controllers/manage/cars/car', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Controller.extend({});
-});
-define('htis/controllers/manage/cars', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Controller.extend({});
-});
-define('htis/controllers/manage/disables/disable', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
-        routeName: "manage.disables.disable",
-        modelTitle: "车辆",
-        parentController: _ember['default'].inject.controller('manage.disables'),
-        parentRouteName: "manage.disables",
-        isBaseFolded: true,
-        isInstancesFolded: false,
-        isDisableDidChange: _ember['default'].observer("model.isDisable", function () {
-            var _this = this;
-
-            //当记录被不再为待处理状态时，返回上一个界面，这里的状态变化包括当前用户操作结果及从服务器中push过来的状态变化
-            //这里一定要加run.next，因为不加的话，新建instance会先触发isDisable属性的判断，从而无法正确把新的instance加载到car中
-            _ember['default'].run.next(function () {
-                var isDisable = _this.get("model.isDisable");
-                if (!isDisable) {
-                    var currentRouteName = _this.get("applicationController.currentRouteName");
-                    if (currentRouteName === _this.routeName + '.index' || currentRouteName === _this.routeName + '.edit.index') {
-                        _this.send("goBack");
-                    }
-                }
-            });
-        }),
-        actions: {}
-    });
-});
-define('htis/controllers/manage/disables/index', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Controller.extend({
-        equipment: _ember['default'].inject.service('equipment')
-    });
-});
-define('htis/controllers/manage/disables', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], {
-        modelName: "disable",
-        routeName: "manage.disables",
-        parentController: _ember['default'].inject.controller('manage'),
-        parentRouteName: "manage",
-        pannelTitle: _ember['default'].computed(function () {
-            return "已暂停";
-        }),
-        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
-        pickedResult: _ember['default'].computed("filteredResult.@each.isDisable", "isFiltered", function () {
-            var isFiltered = this.get("isFiltered");
-            var results = this.get("filteredResult").filterBy("isDisable", true);
-            if (isFiltered) {
-                return results.filterBy("isOwn", true);
-            } else {
-                return results;
-            }
-        })
-    });
-});
-define('htis/controllers/manage/pendings/index', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Controller.extend({
-        equipment: _ember['default'].inject.service('equipment')
-    });
-});
-define('htis/controllers/manage/pendings/pending', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
-        routeName: "manage.pendings.pending",
-        modelTitle: "车辆",
-        parentController: _ember['default'].inject.controller('manage.pendings'),
-        parentRouteName: "manage.pendings",
-        isBaseFolded: true,
-        isInstancesFolded: false,
-        isPendingDidChange: _ember['default'].observer("model.isPending", function () {
-            var _this = this;
-
-            //当记录被不再为待处理状态时，返回上一个界面，这里的状态变化包括当前用户操作结果及从服务器中push过来的状态变化
-            //这里一定要加run.next，因为不加的话，新建instance会先触发isPending属性的判断，从而无法正确把新的instance加载到car中
-            _ember['default'].run.next(function () {
-                var isPending = _this.get("model.isPending");
-                if (!isPending) {
-                    var currentRouteName = _this.get("applicationController.currentRouteName");
-                    if (currentRouteName === _this.routeName + '.index' || currentRouteName === _this.routeName + '.edit.index') {
-                        _this.send("goBack");
-                    }
-                }
-            });
-        }),
-        actions: {}
-    });
-});
-define('htis/controllers/manage/pendings', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], {
-        modelName: "pending",
-        routeName: "manage.pendings",
-        parentController: _ember['default'].inject.controller('manage'),
-        parentRouteName: "manage",
-        pannelTitle: _ember['default'].computed(function () {
-            return "待审核";
-        }),
-        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
-        pickedResult: _ember['default'].computed("filteredResult.@each.isPending", "isFiltered", function () {
-            var isFiltered = this.get("isFiltered");
-            var results = this.get("filteredResult").filterBy("isPending", true);
-            if (isFiltered) {
-                return results.filterBy("isOwn", true);
-            } else {
-                return results;
-            }
-        })
-    });
-});
-define('htis/controllers/manage/releases/index', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Controller.extend({
-        equipment: _ember['default'].inject.service('equipment')
-    });
-});
-define('htis/controllers/manage/releases/release', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
-        routeName: "manage.releases.release",
-        modelTitle: "车辆",
-        parentController: _ember['default'].inject.controller('manage.releases'),
-        parentRouteName: "manage.releases",
-        isBaseFolded: true,
-        isInstancesFolded: false,
-        isReleasedDidChange: _ember['default'].observer("model.isReleased", function () {
-            var _this = this;
-
-            //当记录被不再为待处理状态时，返回上一个界面，这里的状态变化包括当前用户操作结果及从服务器中push过来的状态变化
-            //这里一定要加run.next，因为不加的话，新建instance会先触发isReleased属性的判断，从而无法正确把新的instance加载到car中
-            _ember['default'].run.next(function () {
-                var isReleased = _this.get("model.isReleased");
-                if (!isReleased) {
-                    var currentRouteName = _this.get("applicationController.currentRouteName");
-                    if (currentRouteName === _this.routeName + '.index' || currentRouteName === _this.routeName + '.edit.index') {
-                        _this.send("goBack");
-                    }
-                }
-            });
-        }),
-        actions: {}
-    });
-});
-define('htis/controllers/manage/releases', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], {
-        modelName: "release",
-        routeName: "manage.releases",
-        parentController: _ember['default'].inject.controller('manage'),
-        parentRouteName: "manage",
-        pannelTitle: _ember['default'].computed(function () {
-            return "可加油";
-        }),
-        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
-        pickedResult: _ember['default'].computed("filteredResult.@each.isReleased", "isFiltered", function () {
-            var isFiltered = this.get("isFiltered");
-            var results = this.get("filteredResult").filterBy("isReleased", true);
-            if (isFiltered) {
-                return results.filterBy("isOwn", true);
-            } else {
-                return results;
-            }
-        })
-    });
-});
-define('htis/controllers/manage/searchs/index', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Controller.extend({
-        equipment: _ember['default'].inject.service('equipment')
-    });
-});
-define('htis/controllers/manage/searchs/search', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
-        routeName: "manage.searchs.search",
-        modelTitle: "车辆",
-        parentController: _ember['default'].inject.controller('manage.searchs'),
-        parentRouteName: "manage.searchs",
-        isBaseFolded: true,
-        isInstancesFolded: false,
-        actions: {}
-    });
-});
-define('htis/controllers/manage/searchs', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller', 'htis/mixins/archive-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController, _htisMixinsArchiveCarsController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], _htisMixinsArchiveCarsController['default'], {
-        modelName: "search",
-        routeName: "manage.searchs",
-        parentController: _ember['default'].inject.controller('manage'),
-        parentRouteName: "manage",
-        isEmptyKeyFetchable: false,
-        pannelTitle: _ember['default'].computed(function () {
-            return "搜索";
-        }),
-        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
-        pickedResult: _ember['default'].computed("filteredResult", "searchKey", "isFiltered", function () {
-            var isFiltered = this.get("isFiltered");
-            var searchKey = this.get("searchKey");
-            if (!searchKey) {
-                return [];
-            }
-            var results = this.get("filteredResult");
-            if (isFiltered) {
-                return results.filterBy("isOwn", true);
-            } else {
-                return results;
-            }
-        })
-    });
-});
-define('htis/controllers/manage/unuseds/index', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Controller.extend({
-        equipment: _ember['default'].inject.service('equipment')
-    });
-});
-define('htis/controllers/manage/unuseds/unused', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
-        routeName: "manage.unuseds.unused",
-        modelTitle: "车辆",
-        parentController: _ember['default'].inject.controller('manage.unuseds'),
-        parentRouteName: "manage.unuseds",
-        isBaseFolded: true,
-        isInstancesFolded: false,
-        isUnusedDidChange: _ember['default'].observer("model.isUnused", function () {
-            var _this = this;
-
-            //当记录被不再为待处理状态时，返回上一个界面，这里的状态变化包括当前用户操作结果及从服务器中push过来的状态变化
-            //这里一定要加run.next，因为不加的话，新建instance会先触发isUnused属性的判断，从而无法正确把新的instance加载到car中
-            _ember['default'].run.next(function () {
-                var isUnused = _this.get("model.isUnused");
-                if (!isUnused) {
-                    var currentRouteName = _this.get("applicationController.currentRouteName");
-                    if (currentRouteName === _this.routeName + '.index' || currentRouteName === _this.routeName + '.edit.index') {
-                        _this.send("goBack");
-                    }
-                }
-            });
-        }),
-        actions: {}
-    });
-});
-define('htis/controllers/manage/unuseds', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], {
-        modelName: "unused",
-        routeName: "manage.unuseds",
-        parentController: _ember['default'].inject.controller('manage'),
-        parentRouteName: "manage",
-        pannelTitle: _ember['default'].computed(function () {
-            return "待处理";
-        }),
-        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
-        pickedResult: _ember['default'].computed("filteredResult.@each.isUnused", "isFiltered", function () {
-            var isFiltered = this.get("isFiltered");
-            var results = this.get("filteredResult").filterBy("isUnused", true);
-            if (isFiltered) {
-                return results.filterBy("isOwn", true);
-            } else {
-                return results;
-            }
-        })
     });
 });
 define('htis/controllers/manage', ['exports', 'ember'], function (exports, _ember) {
@@ -2415,6 +2122,299 @@ define('htis/controllers/manage', ['exports', 'ember'], function (exports, _embe
         actions: {}
     });
 });
+define('htis/controllers/manage/archives', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller', 'htis/mixins/archive-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController, _htisMixinsArchiveCarsController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], _htisMixinsArchiveCarsController['default'], {
+        modelName: "archive",
+        routeName: "manage.archives",
+        parentController: _ember['default'].inject.controller('manage'),
+        parentRouteName: "manage",
+        pannelTitle: _ember['default'].computed(function () {
+            return "已闲置";
+        }),
+        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
+        pickedResult: _ember['default'].computed("filteredResult.@each.is_archived", "isFiltered", function () {
+            var isFiltered = this.get("isFiltered");
+            var results = this.get("filteredResult").filterBy("is_archived", true);
+            if (isFiltered) {
+                return results.filterBy("isOwn", true);
+            } else {
+                return results;
+            }
+        })
+    });
+});
+define('htis/controllers/manage/archives/archive', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
+        routeName: "manage.archives.archive",
+        modelTitle: "车辆",
+        parentController: _ember['default'].inject.controller('manage.archives'),
+        parentRouteName: "manage.archives",
+        isBaseFolded: true,
+        isInstancesFolded: false,
+        actions: {}
+    });
+});
+define('htis/controllers/manage/archives/index', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        equipment: _ember['default'].inject.service('equipment')
+    });
+});
+define('htis/controllers/manage/cars', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Controller.extend({});
+});
+define('htis/controllers/manage/cars/car', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Controller.extend({});
+});
+define('htis/controllers/manage/disables', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], {
+        modelName: "disable",
+        routeName: "manage.disables",
+        parentController: _ember['default'].inject.controller('manage'),
+        parentRouteName: "manage",
+        pannelTitle: _ember['default'].computed(function () {
+            return "已暂停";
+        }),
+        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
+        pickedResult: _ember['default'].computed("filteredResult.@each.isDisable", "isFiltered", function () {
+            var isFiltered = this.get("isFiltered");
+            var results = this.get("filteredResult").filterBy("isDisable", true);
+            if (isFiltered) {
+                return results.filterBy("isOwn", true);
+            } else {
+                return results;
+            }
+        })
+    });
+});
+define('htis/controllers/manage/disables/disable', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
+        routeName: "manage.disables.disable",
+        modelTitle: "车辆",
+        parentController: _ember['default'].inject.controller('manage.disables'),
+        parentRouteName: "manage.disables",
+        isBaseFolded: true,
+        isInstancesFolded: false,
+        isDisableDidChange: _ember['default'].observer("model.isDisable", function () {
+            var _this = this;
+
+            //当记录被不再为待处理状态时，返回上一个界面，这里的状态变化包括当前用户操作结果及从服务器中push过来的状态变化
+            //这里一定要加run.next，因为不加的话，新建instance会先触发isDisable属性的判断，从而无法正确把新的instance加载到car中
+            _ember['default'].run.next(function () {
+                var isDisable = _this.get("model.isDisable");
+                if (!isDisable) {
+                    var currentRouteName = _this.get("applicationController.currentRouteName");
+                    if (currentRouteName === _this.routeName + '.index' || currentRouteName === _this.routeName + '.edit.index') {
+                        _this.send("goBack");
+                    }
+                }
+            });
+        }),
+        actions: {}
+    });
+});
+define('htis/controllers/manage/disables/index', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        equipment: _ember['default'].inject.service('equipment')
+    });
+});
+define('htis/controllers/manage/pendings', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], {
+        modelName: "pending",
+        routeName: "manage.pendings",
+        parentController: _ember['default'].inject.controller('manage'),
+        parentRouteName: "manage",
+        pannelTitle: _ember['default'].computed(function () {
+            return "待审核";
+        }),
+        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
+        pickedResult: _ember['default'].computed("filteredResult.@each.isPending", "isFiltered", function () {
+            var isFiltered = this.get("isFiltered");
+            var results = this.get("filteredResult").filterBy("isPending", true);
+            if (isFiltered) {
+                return results.filterBy("isOwn", true);
+            } else {
+                return results;
+            }
+        })
+    });
+});
+define('htis/controllers/manage/pendings/index', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        equipment: _ember['default'].inject.service('equipment')
+    });
+});
+define('htis/controllers/manage/pendings/pending', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
+        routeName: "manage.pendings.pending",
+        modelTitle: "车辆",
+        parentController: _ember['default'].inject.controller('manage.pendings'),
+        parentRouteName: "manage.pendings",
+        isBaseFolded: true,
+        isInstancesFolded: false,
+        isPendingDidChange: _ember['default'].observer("model.isPending", function () {
+            var _this = this;
+
+            //当记录被不再为待处理状态时，返回上一个界面，这里的状态变化包括当前用户操作结果及从服务器中push过来的状态变化
+            //这里一定要加run.next，因为不加的话，新建instance会先触发isPending属性的判断，从而无法正确把新的instance加载到car中
+            _ember['default'].run.next(function () {
+                var isPending = _this.get("model.isPending");
+                if (!isPending) {
+                    var currentRouteName = _this.get("applicationController.currentRouteName");
+                    if (currentRouteName === _this.routeName + '.index' || currentRouteName === _this.routeName + '.edit.index') {
+                        _this.send("goBack");
+                    }
+                }
+            });
+        }),
+        actions: {}
+    });
+});
+define('htis/controllers/manage/releases', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], {
+        modelName: "release",
+        routeName: "manage.releases",
+        parentController: _ember['default'].inject.controller('manage'),
+        parentRouteName: "manage",
+        pannelTitle: _ember['default'].computed(function () {
+            return "可加油";
+        }),
+        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
+        pickedResult: _ember['default'].computed("filteredResult.@each.isReleased", "isFiltered", function () {
+            var isFiltered = this.get("isFiltered");
+            var results = this.get("filteredResult").filterBy("isReleased", true);
+            if (isFiltered) {
+                return results.filterBy("isOwn", true);
+            } else {
+                return results;
+            }
+        })
+    });
+});
+define('htis/controllers/manage/releases/index', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        equipment: _ember['default'].inject.service('equipment')
+    });
+});
+define('htis/controllers/manage/releases/release', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
+        routeName: "manage.releases.release",
+        modelTitle: "车辆",
+        parentController: _ember['default'].inject.controller('manage.releases'),
+        parentRouteName: "manage.releases",
+        isBaseFolded: true,
+        isInstancesFolded: false,
+        isReleasedDidChange: _ember['default'].observer("model.isReleased", function () {
+            var _this = this;
+
+            //当记录被不再为待处理状态时，返回上一个界面，这里的状态变化包括当前用户操作结果及从服务器中push过来的状态变化
+            //这里一定要加run.next，因为不加的话，新建instance会先触发isReleased属性的判断，从而无法正确把新的instance加载到car中
+            _ember['default'].run.next(function () {
+                var isReleased = _this.get("model.isReleased");
+                if (!isReleased) {
+                    var currentRouteName = _this.get("applicationController.currentRouteName");
+                    if (currentRouteName === _this.routeName + '.index' || currentRouteName === _this.routeName + '.edit.index') {
+                        _this.send("goBack");
+                    }
+                }
+            });
+        }),
+        actions: {}
+    });
+});
+define('htis/controllers/manage/searchs', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller', 'htis/mixins/archive-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController, _htisMixinsArchiveCarsController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], _htisMixinsArchiveCarsController['default'], {
+        modelName: "search",
+        routeName: "manage.searchs",
+        parentController: _ember['default'].inject.controller('manage'),
+        parentRouteName: "manage",
+        isEmptyKeyFetchable: false,
+        pannelTitle: _ember['default'].computed(function () {
+            return "搜索";
+        }),
+        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
+        pickedResult: _ember['default'].computed("filteredResult", "searchKey", "isFiltered", function () {
+            var isFiltered = this.get("isFiltered");
+            var searchKey = this.get("searchKey");
+            if (!searchKey) {
+                return [];
+            }
+            var results = this.get("filteredResult");
+            if (isFiltered) {
+                return results.filterBy("isOwn", true);
+            } else {
+                return results;
+            }
+        })
+    });
+});
+define('htis/controllers/manage/searchs/index', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        equipment: _ember['default'].inject.service('equipment')
+    });
+});
+define('htis/controllers/manage/searchs/search', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
+        routeName: "manage.searchs.search",
+        modelTitle: "车辆",
+        parentController: _ember['default'].inject.controller('manage.searchs'),
+        parentRouteName: "manage.searchs",
+        isBaseFolded: true,
+        isInstancesFolded: false,
+        actions: {}
+    });
+});
+define('htis/controllers/manage/unuseds', ['exports', 'ember', 'htis/mixins/standard-list/controller', 'htis/mixins/manage-cars/controller'], function (exports, _ember, _htisMixinsStandardListController, _htisMixinsManageCarsController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], _htisMixinsManageCarsController['default'], {
+        modelName: "unused",
+        routeName: "manage.unuseds",
+        parentController: _ember['default'].inject.controller('manage'),
+        parentRouteName: "manage",
+        pannelTitle: _ember['default'].computed(function () {
+            return "待处理";
+        }),
+        allArrangedResult: _ember['default'].computed.sort('pickedResult', 'modifiedDateSortingDesc'),
+        pickedResult: _ember['default'].computed("filteredResult.@each.isUnused", "isFiltered", function () {
+            var isFiltered = this.get("isFiltered");
+            var results = this.get("filteredResult").filterBy("isUnused", true);
+            if (isFiltered) {
+                return results.filterBy("isOwn", true);
+            } else {
+                return results;
+            }
+        })
+    });
+});
+define('htis/controllers/manage/unuseds/index', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        equipment: _ember['default'].inject.service('equipment')
+    });
+});
+define('htis/controllers/manage/unuseds/unused', ['exports', 'ember', 'htis/mixins/standard-detail/controller', 'htis/mixins/instance-list/controller', 'htis/mixins/instance-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController, _htisMixinsInstanceListController, _htisMixinsInstanceDetailController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], _htisMixinsInstanceListController['default'], _htisMixinsInstanceDetailController['default'], {
+        routeName: "manage.unuseds.unused",
+        modelTitle: "车辆",
+        parentController: _ember['default'].inject.controller('manage.unuseds'),
+        parentRouteName: "manage.unuseds",
+        isBaseFolded: true,
+        isInstancesFolded: false,
+        isUnusedDidChange: _ember['default'].observer("model.isUnused", function () {
+            var _this = this;
+
+            //当记录被不再为待处理状态时，返回上一个界面，这里的状态变化包括当前用户操作结果及从服务器中push过来的状态变化
+            //这里一定要加run.next，因为不加的话，新建instance会先触发isUnused属性的判断，从而无法正确把新的instance加载到car中
+            _ember['default'].run.next(function () {
+                var isUnused = _this.get("model.isUnused");
+                if (!isUnused) {
+                    var currentRouteName = _this.get("applicationController.currentRouteName");
+                    if (currentRouteName === _this.routeName + '.index' || currentRouteName === _this.routeName + '.edit.index') {
+                        _this.send("goBack");
+                    }
+                }
+            });
+        }),
+        actions: {}
+    });
+});
 define('htis/controllers/messages', ['exports', 'ember'], function (exports, _ember) {
     exports['default'] = _ember['default'].Controller.extend({
         model: _ember['default'].computed(function () {
@@ -2465,6 +2465,123 @@ define('htis/controllers/online', ['exports', 'ember'], function (exports, _embe
       modifiedDateSortingDesc: ['modified_date:desc'],
       arrangedResult: _ember['default'].computed.sort('model', 'modifiedDateSortingDesc')
    });
+});
+define('htis/controllers/scanning', ['exports', 'ember', 'ember-data', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _emberData, _htisMixinsNavigablePaneController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
+        modelName: "scanning",
+        routeName: "scanning",
+        modelTitle: "扫码",
+        pannelTitle: "扫码加油",
+        vinCode: "",
+        isChecking: false,
+        isConfirming: false,
+        applicationController: _ember['default'].inject.controller('application'),
+        sessionController: _ember['default'].inject.controller('session'),
+        fillingController: _ember['default'].inject.controller('scanning.filling'),
+        isPowered: _ember['default'].computed("sessionController.isBillScannerPowered", function () {
+            return this.get("sessionController.isBillScannerPowered");
+        }),
+        car: _ember['default'].computed("vinCode", function () {
+            var vinCode = this.get("vinCode").trim();
+            this.set("isChecking", true);
+            if (vinCode) {
+                return this.store.peekAll("car").findBy("vin", vinCode);
+            } else {
+                return null;
+            }
+        }),
+        instances: _ember['default'].computed("car", function () {
+            var _this = this;
+
+            var car = this.get("car");
+            if (car) {
+                var _ret = (function () {
+                    var instances = car.get("instances");
+                    var syncToken = _this.get("applicationController.syncToken");
+                    return {
+                        v: instances.filter(function (instance) {
+                            if (instance.get("is_released") && !instance.get("is_archived") && instance.get("is_enable") && !instance.get("isFinished")) {
+                                // if(instance.get("end_date").getTime() - syncToken.getTime() < 0 || instance.get("start_date").getTime() - syncToken.getTime() > 0){
+                                if (syncToken.getTime() > instance.get("end_date").getTime()) {
+                                    //过期不能加油
+                                    return false;
+                                } else if (syncToken.getTime() < instance.get("start_date").getTime()) {
+                                    //没到时间不能加油
+                                    return false;
+                                } else {
+                                    return true;
+                                }
+                            } else {
+                                return false;
+                            }
+                        })
+                    };
+                })();
+
+                if (typeof _ret === 'object') return _ret.v;
+            } else {
+                return [];
+            }
+        }),
+        instance: null,
+        instancesDidChange: _ember['default'].observer("instances", "vinCode", function () {
+            var instances = this.get("instances");
+            if (instances.get("length") === 1) {
+                this.set("instance", instances.objectAt(0));
+            } else {
+                this.set("instance", null);
+                if (instances.get("length") > 1) {
+                    this.set("isConfirming", true);
+                }
+            }
+            this.set("isChecking", false);
+        }),
+        instanceDidChange: _ember['default'].observer("instance", function () {
+            var _this2 = this;
+
+            var instance = this.get("instance");
+            if (instance) {
+                this.get("fillingController").set("oils", instance.get("oils"));
+                //加run.next的目的是提高性能，防止在低性能手机上显示不出oils
+                _ember['default'].run.next(function () {
+                    //this.get("vinCode")加这个原因是手机上卡的话，会报goFilling不存在错误
+                    if (_this2.get("vinCode")) {
+                        _this2.send("goFilling");
+                    }
+                });
+            }
+        }),
+        errors: _ember['default'].computed("vinCode", "car", "instances.length", "instance", function () {
+            var errors = _emberData['default'].Errors.create();
+            if (this.get("vinCode.length") === 0) {
+                return errors;
+            }
+            if (this.get("car")) {
+                if (this.get("instances.length") === 0 || !this.get("instance")) {
+                    errors.add("check_errors", "该车辆没有权限加油");
+                }
+            } else {
+                errors.add("check_errors", "车辆不存在");
+            }
+            return errors;
+        }),
+        actions: {
+            clearError: function clearError() {
+                this.set("vinCode", "");
+                this.get("errors").clear();
+            },
+            tryGoNext: function tryGoNext() {
+                this.notifyPropertyChange("vinCode");
+            },
+            cancelConfirming: function cancelConfirming() {
+                this.set("vinCode", "");
+                this.set("isConfirming", false);
+            },
+            selInstance: function selInstance(instance) {
+                this.set("instance", instance);
+            }
+        }
+    });
 });
 define('htis/controllers/scanning/filling', ['exports', 'ember', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _htisMixinsNavigablePaneController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
@@ -2690,123 +2807,6 @@ define('htis/controllers/scanning/filling', ['exports', 'ember', 'htis/mixins/na
             },
             clearErrorForSignature: function clearErrorForSignature() {
                 this.get("model.errors").remove("signature");
-            }
-        }
-    });
-});
-define('htis/controllers/scanning', ['exports', 'ember', 'ember-data', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _emberData, _htisMixinsNavigablePaneController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
-        modelName: "scanning",
-        routeName: "scanning",
-        modelTitle: "扫码",
-        pannelTitle: "扫码加油",
-        vinCode: "",
-        isChecking: false,
-        isConfirming: false,
-        applicationController: _ember['default'].inject.controller('application'),
-        sessionController: _ember['default'].inject.controller('session'),
-        fillingController: _ember['default'].inject.controller('scanning.filling'),
-        isPowered: _ember['default'].computed("sessionController.isBillScannerPowered", function () {
-            return this.get("sessionController.isBillScannerPowered");
-        }),
-        car: _ember['default'].computed("vinCode", function () {
-            var vinCode = this.get("vinCode").trim();
-            this.set("isChecking", true);
-            if (vinCode) {
-                return this.store.peekAll("car").findBy("vin", vinCode);
-            } else {
-                return null;
-            }
-        }),
-        instances: _ember['default'].computed("car", function () {
-            var _this = this;
-
-            var car = this.get("car");
-            if (car) {
-                var _ret = (function () {
-                    var instances = car.get("instances");
-                    var syncToken = _this.get("applicationController.syncToken");
-                    return {
-                        v: instances.filter(function (instance) {
-                            if (instance.get("is_released") && !instance.get("is_archived") && instance.get("is_enable") && !instance.get("isFinished")) {
-                                // if(instance.get("end_date").getTime() - syncToken.getTime() < 0 || instance.get("start_date").getTime() - syncToken.getTime() > 0){
-                                if (syncToken.getTime() > instance.get("end_date").getTime()) {
-                                    //过期不能加油
-                                    return false;
-                                } else if (syncToken.getTime() < instance.get("start_date").getTime()) {
-                                    //没到时间不能加油
-                                    return false;
-                                } else {
-                                    return true;
-                                }
-                            } else {
-                                return false;
-                            }
-                        })
-                    };
-                })();
-
-                if (typeof _ret === 'object') return _ret.v;
-            } else {
-                return [];
-            }
-        }),
-        instance: null,
-        instancesDidChange: _ember['default'].observer("instances", "vinCode", function () {
-            var instances = this.get("instances");
-            if (instances.get("length") === 1) {
-                this.set("instance", instances.objectAt(0));
-            } else {
-                this.set("instance", null);
-                if (instances.get("length") > 1) {
-                    this.set("isConfirming", true);
-                }
-            }
-            this.set("isChecking", false);
-        }),
-        instanceDidChange: _ember['default'].observer("instance", function () {
-            var _this2 = this;
-
-            var instance = this.get("instance");
-            if (instance) {
-                this.get("fillingController").set("oils", instance.get("oils"));
-                //加run.next的目的是提高性能，防止在低性能手机上显示不出oils
-                _ember['default'].run.next(function () {
-                    //this.get("vinCode")加这个原因是手机上卡的话，会报goFilling不存在错误
-                    if (_this2.get("vinCode")) {
-                        _this2.send("goFilling");
-                    }
-                });
-            }
-        }),
-        errors: _ember['default'].computed("vinCode", "car", "instances.length", "instance", function () {
-            var errors = _emberData['default'].Errors.create();
-            if (this.get("vinCode.length") === 0) {
-                return errors;
-            }
-            if (this.get("car")) {
-                if (this.get("instances.length") === 0 || !this.get("instance")) {
-                    errors.add("check_errors", "该车辆没有权限加油");
-                }
-            } else {
-                errors.add("check_errors", "车辆不存在");
-            }
-            return errors;
-        }),
-        actions: {
-            clearError: function clearError() {
-                this.set("vinCode", "");
-                this.get("errors").clear();
-            },
-            tryGoNext: function tryGoNext() {
-                this.notifyPropertyChange("vinCode");
-            },
-            cancelConfirming: function cancelConfirming() {
-                this.set("vinCode", "");
-                this.set("isConfirming", false);
-            },
-            selInstance: function selInstance(instance) {
-                this.set("instance", instance);
             }
         }
     });
@@ -3054,10 +3054,63 @@ define('htis/controllers/session', ['exports', 'ember'], function (exports, _emb
         }
     });
 });
-define('htis/controllers/setting/departments/department', ['exports', 'ember', 'htis/mixins/standard-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], {
-        routeName: "setting.departments.department",
-        modelTitle: "部门"
+define('htis/controllers/setting', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Controller.extend({
+        routeName: "setting.index",
+        equipment: _ember['default'].inject.service('equipment'),
+        applicationController: _ember['default'].inject.controller('application'),
+        sessionController: _ember['default'].inject.controller('session'),
+        messagesController: _ember['default'].inject.controller('messages'),
+        pannelTitle: "系统设置",
+        isActive: false,
+        isBack: false,
+        selection: null,
+        isHide: false,
+        isPowered: _ember['default'].computed("sessionController.isSystemPowered", function () {
+            return this.get("sessionController.isSystemPowered");
+        }),
+        // runLaterForHide:null,
+        // isBackDidChange:Ember.observer("isBack",function(){
+        //     //退出后要把div隐藏来减少内存消耗
+        //     if(this.get("isBack")){
+        //         if(Ember.$.support.transition){
+        //             Ember.run.cancel(this.runLaterForHide);
+        //             this.runLaterForHide = Ember.run.later(()=>{
+        //                 if(this.get("isBack")){
+        //                     this.set("isHide",true);
+        //                 }
+        //             },3000);
+        //         }
+        //         else{
+        //             this.set("isHide",true);
+        //         }
+        //     }
+        // }),
+        equipmentIsXsDidChange: _ember['default'].observer("equipment.isXs", function () {
+            //当浏览器大小变化造成从手机模式变成非手机模式时需要保证列表中至少有一个选中
+            if (this.get("isActive") && this.get("equipment.isNotXs") && this.get("selection") === null) {
+                this.send("goRoles");
+            }
+        }),
+        isRoles: _ember['default'].computed('selection', function () {
+            return this.get('selection') === 'roles';
+        }),
+        isUsers: _ember['default'].computed('selection', function () {
+            return this.get('selection') === 'users';
+        }),
+        isProjects: _ember['default'].computed('selection', function () {
+            return this.get('selection') === 'projects';
+        }),
+        isDepartments: _ember['default'].computed('selection', function () {
+            return this.get('selection') === 'departments';
+        }),
+        isOils: _ember['default'].computed('selection', function () {
+            return this.get('selection') === 'oils';
+        }),
+        isPreference: _ember['default'].computed('selection', function () {
+            return this.get('selection') === 'preference';
+        }),
+        actions: {}
     });
 });
 define('htis/controllers/setting/departments', ['exports', 'ember', 'htis/mixins/standard-list/controller'], function (exports, _ember, _htisMixinsStandardListController) {
@@ -3067,16 +3120,22 @@ define('htis/controllers/setting/departments', ['exports', 'ember', 'htis/mixins
         modelTitle: "部门"
     });
 });
-define('htis/controllers/setting/oils/oil', ['exports', 'ember', 'htis/mixins/standard-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController) {
+define('htis/controllers/setting/departments/department', ['exports', 'ember', 'htis/mixins/standard-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], {
-        routeName: "setting.oils.oil",
-        modelTitle: "油品"
+        routeName: "setting.departments.department",
+        modelTitle: "部门"
     });
 });
 define('htis/controllers/setting/oils', ['exports', 'ember', 'htis/mixins/standard-list/controller'], function (exports, _ember, _htisMixinsStandardListController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], {
         modelName: "oil",
         routeName: "setting.oils",
+        modelTitle: "油品"
+    });
+});
+define('htis/controllers/setting/oils/oil', ['exports', 'ember', 'htis/mixins/standard-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], {
+        routeName: "setting.oils.oil",
         modelTitle: "油品"
     });
 });
@@ -3218,6 +3277,25 @@ define('htis/controllers/setting/preference', ['exports', 'ember', 'htis/mixins/
         }
     });
 });
+define('htis/controllers/setting/projects', ['exports', 'ember', 'htis/mixins/standard-list/controller'], function (exports, _ember, _htisMixinsStandardListController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], {
+        modelName: "project",
+        routeName: "setting.projects",
+        modelTitle: "项目",
+        createRecord: function createRecord() {
+            var currentUser = this.get("sessionController.user");
+            var car = this.store.createRecord(this.modelName, {
+                name: '新' + this.modelTitle,
+                is_enable: true,
+                creater: currentUser,
+                created_date: new Date(),
+                modifier: currentUser,
+                modified_date: new Date()
+            });
+            return car;
+        }
+    });
+});
 define('htis/controllers/setting/projects/project', ['exports', 'ember', 'htis/mixins/standard-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardDetailController['default'], {
         routeName: "setting.projects.project",
@@ -3236,23 +3314,11 @@ define('htis/controllers/setting/projects/project', ['exports', 'ember', 'htis/m
         }
     });
 });
-define('htis/controllers/setting/projects', ['exports', 'ember', 'htis/mixins/standard-list/controller'], function (exports, _ember, _htisMixinsStandardListController) {
+define('htis/controllers/setting/roles', ['exports', 'ember', 'htis/mixins/standard-list/controller'], function (exports, _ember, _htisMixinsStandardListController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], {
-        modelName: "project",
-        routeName: "setting.projects",
-        modelTitle: "项目",
-        createRecord: function createRecord() {
-            var currentUser = this.get("sessionController.user");
-            var car = this.store.createRecord(this.modelName, {
-                name: '新' + this.modelTitle,
-                is_enable: true,
-                creater: currentUser,
-                created_date: new Date(),
-                modifier: currentUser,
-                modified_date: new Date()
-            });
-            return car;
-        }
+        modelName: "role",
+        routeName: "setting.roles",
+        modelTitle: "角色"
     });
 });
 define('htis/controllers/setting/roles/role', ['exports', 'ember', 'htis/mixins/standard-detail/controller'], function (exports, _ember, _htisMixinsStandardDetailController) {
@@ -3289,40 +3355,25 @@ define('htis/controllers/setting/roles/role', ['exports', 'ember', 'htis/mixins/
         }
     });
 });
-define('htis/controllers/setting/roles', ['exports', 'ember', 'htis/mixins/standard-list/controller'], function (exports, _ember, _htisMixinsStandardListController) {
+define('htis/controllers/setting/users', ['exports', 'ember', 'htis/mixins/standard-list/controller'], function (exports, _ember, _htisMixinsStandardListController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], {
-        modelName: "role",
-        routeName: "setting.roles",
-        modelTitle: "角色"
-    });
-});
-define("htis/controllers/setting/users/user/resetpwd", ["exports", "ember"], function (exports, _ember) {
-    exports["default"] = _ember["default"].Controller.extend({
-        routeName: "setting.users.user.resetpwd",
-        pannelTitle: "重置密码",
-        isServerSideErrorDidChange: _ember["default"].observer("model.errors.server_side_error.length", function () {
-            if (this.get("model.errors.server_side_error.length")) {
-                this.set("isPickingError", true);
-            }
-        }),
-        actions: {
-            save: function save() {
-                var _this = this;
-
-                this.get('model').save().then(function () {
-                    _this.send("goIndex");
-                }, function () {});
-            },
-            cancel: function cancel() {
-                this.send("goIndex");
-            },
-            clearPop: function clearPop() {
-                this.set("isPickUpPopActive", false);
-            },
-            clearError: function clearError(model) {
-                this.set("isPickUpPopActive", false);
-                model.get("errors").remove("server_side_error");
-            }
+        modelName: "user",
+        routeName: "setting.users",
+        modelTitle: "用户",
+        searchPlaceholder: "输入名称、手机号、邮箱地址或角色搜索",
+        createRecord: function createRecord() {
+            var currentUser = this.get("sessionController.user");
+            var car = this.store.createRecord(this.modelName, {
+                name: '新' + this.modelTitle,
+                phone: '',
+                email: '',
+                signature: '',
+                creater: currentUser,
+                created_date: new Date(),
+                modifier: currentUser,
+                modified_date: new Date()
+            });
+            return car;
         }
     });
 });
@@ -3374,85 +3425,34 @@ define('htis/controllers/setting/users/user', ['exports', 'ember', 'htis/mixins/
         }
     });
 });
-define('htis/controllers/setting/users', ['exports', 'ember', 'htis/mixins/standard-list/controller'], function (exports, _ember, _htisMixinsStandardListController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsStandardListController['default'], {
-        modelName: "user",
-        routeName: "setting.users",
-        modelTitle: "用户",
-        searchPlaceholder: "输入名称、手机号、邮箱地址或角色搜索",
-        createRecord: function createRecord() {
-            var currentUser = this.get("sessionController.user");
-            var car = this.store.createRecord(this.modelName, {
-                name: '新' + this.modelTitle,
-                phone: '',
-                email: '',
-                signature: '',
-                creater: currentUser,
-                created_date: new Date(),
-                modifier: currentUser,
-                modified_date: new Date()
-            });
-            return car;
-        }
-    });
-});
-define('htis/controllers/setting', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Controller.extend({
-        routeName: "setting.index",
-        equipment: _ember['default'].inject.service('equipment'),
-        applicationController: _ember['default'].inject.controller('application'),
-        sessionController: _ember['default'].inject.controller('session'),
-        messagesController: _ember['default'].inject.controller('messages'),
-        pannelTitle: "系统设置",
-        isActive: false,
-        isBack: false,
-        selection: null,
-        isHide: false,
-        isPowered: _ember['default'].computed("sessionController.isSystemPowered", function () {
-            return this.get("sessionController.isSystemPowered");
-        }),
-        // runLaterForHide:null,
-        // isBackDidChange:Ember.observer("isBack",function(){
-        //     //退出后要把div隐藏来减少内存消耗
-        //     if(this.get("isBack")){
-        //         if(Ember.$.support.transition){
-        //             Ember.run.cancel(this.runLaterForHide);
-        //             this.runLaterForHide = Ember.run.later(()=>{
-        //                 if(this.get("isBack")){
-        //                     this.set("isHide",true);
-        //                 }
-        //             },3000);
-        //         }
-        //         else{
-        //             this.set("isHide",true);
-        //         }
-        //     }
-        // }),
-        equipmentIsXsDidChange: _ember['default'].observer("equipment.isXs", function () {
-            //当浏览器大小变化造成从手机模式变成非手机模式时需要保证列表中至少有一个选中
-            if (this.get("isActive") && this.get("equipment.isNotXs") && this.get("selection") === null) {
-                this.send("goRoles");
+define("htis/controllers/setting/users/user/resetpwd", ["exports", "ember"], function (exports, _ember) {
+    exports["default"] = _ember["default"].Controller.extend({
+        routeName: "setting.users.user.resetpwd",
+        pannelTitle: "重置密码",
+        isServerSideErrorDidChange: _ember["default"].observer("model.errors.server_side_error.length", function () {
+            if (this.get("model.errors.server_side_error.length")) {
+                this.set("isPickingError", true);
             }
         }),
-        isRoles: _ember['default'].computed('selection', function () {
-            return this.get('selection') === 'roles';
-        }),
-        isUsers: _ember['default'].computed('selection', function () {
-            return this.get('selection') === 'users';
-        }),
-        isProjects: _ember['default'].computed('selection', function () {
-            return this.get('selection') === 'projects';
-        }),
-        isDepartments: _ember['default'].computed('selection', function () {
-            return this.get('selection') === 'departments';
-        }),
-        isOils: _ember['default'].computed('selection', function () {
-            return this.get('selection') === 'oils';
-        }),
-        isPreference: _ember['default'].computed('selection', function () {
-            return this.get('selection') === 'preference';
-        }),
-        actions: {}
+        actions: {
+            save: function save() {
+                var _this = this;
+
+                this.get('model').save().then(function () {
+                    _this.send("goIndex");
+                }, function () {});
+            },
+            cancel: function cancel() {
+                this.send("goIndex");
+            },
+            clearPop: function clearPop() {
+                this.set("isPickUpPopActive", false);
+            },
+            clearError: function clearError(model) {
+                this.set("isPickUpPopActive", false);
+                model.get("errors").remove("server_side_error");
+            }
+        }
     });
 });
 define('htis/controllers/shortcut', ['exports', 'ember', 'ember-data'], function (exports, _ember, _emberData) {
@@ -3684,17 +3684,6 @@ define('htis/controllers/shortcut', ['exports', 'ember', 'ember-data'], function
         }
     });
 });
-define('htis/controllers/start/bill', ['exports', 'ember', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _htisMixinsNavigablePaneController) {
-    exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
-        applicationController: _ember['default'].inject.controller('application'),
-        sessionController: _ember['default'].inject.controller('session'),
-        modelName: "scanning",
-        routeName: "start.scanning",
-        modelTitle: "加油单",
-        pannelTitle: "加油单详情",
-        actions: {}
-    });
-});
 define('htis/controllers/start', ['exports', 'ember', 'ember-data', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _emberData, _htisMixinsNavigablePaneController) {
     exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
         routeName: "start.index",
@@ -3770,6 +3759,17 @@ define('htis/controllers/start', ['exports', 'ember', 'ember-data', 'htis/mixins
                 });
             }
         }
+    });
+});
+define('htis/controllers/start/bill', ['exports', 'ember', 'htis/mixins/navigable-pane/controller'], function (exports, _ember, _htisMixinsNavigablePaneController) {
+    exports['default'] = _ember['default'].Controller.extend(_htisMixinsNavigablePaneController['default'], {
+        applicationController: _ember['default'].inject.controller('application'),
+        sessionController: _ember['default'].inject.controller('session'),
+        modelName: "scanning",
+        routeName: "start.scanning",
+        modelTitle: "加油单",
+        pannelTitle: "加油单详情",
+        actions: {}
     });
 });
 define('htis/controllers/startup', ['exports', 'ember'], function (exports, _ember) {
@@ -4187,6 +4187,18 @@ define('htis/initializers/export-application-global', ['exports', 'ember', 'htis
   function initialize() {
     var application = arguments[1] || arguments[0];
     if (_htisConfigEnvironment['default'].exportApplicationGlobal !== false) {
+      var theGlobal;
+      if (typeof window !== 'undefined') {
+        theGlobal = window;
+      } else if (typeof global !== 'undefined') {
+        theGlobal = global;
+      } else if (typeof self !== 'undefined') {
+        theGlobal = self;
+      } else {
+        // no reasonable global, just bail
+        return;
+      }
+
       var value = _htisConfigEnvironment['default'].exportApplicationGlobal;
       var globalName;
 
@@ -4196,13 +4208,13 @@ define('htis/initializers/export-application-global', ['exports', 'ember', 'htis
         globalName = _ember['default'].String.classify(_htisConfigEnvironment['default'].modulePrefix);
       }
 
-      if (!window[globalName]) {
-        window[globalName] = application;
+      if (!theGlobal[globalName]) {
+        theGlobal[globalName] = application;
 
         application.reopen({
           willDestroy: function willDestroy() {
             this._super.apply(this, arguments);
-            delete window[globalName];
+            delete theGlobal[globalName];
           }
         });
       }
@@ -7678,148 +7690,6 @@ define('htis/router', ['exports', 'ember', 'htis/config/environment'], function 
 
   exports['default'] = Router;
 });
-define('htis/routes/account/info/edit', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Route.extend({
-        controllerName: 'account.info',
-        renderTemplate: function renderTemplate(controller) {
-            this.render('account/info', { outlet: 'account/info', controller: controller });
-        },
-        activate: function activate() {
-            var controller = this.controllerFor("account/info");
-            controller.set("isEditing", true);
-            return this;
-        },
-        deactivate: function deactivate() {
-            var controller = this.controller;
-            var model = controller.get("model");
-            if (model) {
-                model.rollbackAttributes();
-            }
-            return this;
-        },
-        actions: {
-            goIndex: function goIndex() {
-                this.transitionTo('account.info.index');
-            }
-        }
-    });
-});
-define('htis/routes/account/info/index', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Route.extend({
-        controllerName: 'account.info',
-        renderTemplate: function renderTemplate(controller) {
-            this.render('account/info', { outlet: 'account/info', controller: controller });
-        },
-        activate: function activate() {
-            var controller = this.controllerFor("account/info");
-            controller.set("isEditing", false);
-            return this;
-        },
-        actions: {
-            goEdit: function goEdit() {
-                this.transitionTo('account.info.edit');
-            }
-        }
-    });
-});
-define('htis/routes/account/info', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
-        controllerName: 'account.info',
-        parentControllerName: "account"
-    });
-});
-// import Ember from 'ember';
-
-// export default Ember.Route.extend({
-//     activate(){
-//         let controller = this.controllerFor("account.info");
-//         let p_controller = this.controllerFor("account");
-//         if(Ember.$.support.transition){
-//             Ember.run.next(()=>{
-//             	//这里要加later的原因是有时next执行得太快没有动画效果
-//     	        // Ember.run.later(()=>{
-//     	            controller.set("isActive",true);
-//     		        p_controller.set("isBack",true);
-//     	        // },100);
-//             });
-//         }
-//         else{
-//             controller.set("isActive",true);
-//             p_controller.set("isBack",true);
-//         }
-//         return this;
-//     },
-//     deactivate(){
-//         let controller = this.controllerFor("account.info");
-//         let p_controller = this.controllerFor("account");
-//         controller.set("isActive",false);
-//         p_controller.set("isBack",false);
-//         return this;
-//     },
-// 	actions:{
-// 		goBack(){
-//             this.transitionTo('account');
-// 		}
-// 	}
-// });
-define('htis/routes/account/pwd', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
-        controllerName: 'account.pwd',
-        parentControllerName: "account",
-        model: function model() {
-            var user = this.controllerFor("session").get("user");
-            return this.store.createRecord('accountpwd', {
-                user: user
-            });
-        },
-        deactivate: function deactivate() {
-            this._super();
-            this.controller.send("unloadRecord");
-            return this;
-        }
-    });
-});
-// import Ember from 'ember';
-
-// export default Ember.Route.extend({
-//     model(){
-//         let user = this.controllerFor("session").get("user");
-//         return this.store.createRecord('accountpwd',{
-//             user: user
-//         });
-//     },
-//     activate(){
-//         let controller = this.controllerFor("account/pwd");
-//         let p_controller = this.controllerFor("account");
-//         if(Ember.$.support.transition){
-//             Ember.run.next(()=>{
-//             	//这里要加later的原因是有时next执行得太快没有动画效果
-//     	        // Ember.run.later(()=>{
-//     	            controller.set("isActive",true);
-//     		        p_controller.set("isBack",true);
-//     	        // },100);
-//             });
-//         }
-//         else{
-//             controller.set("isActive",true);
-//             p_controller.set("isBack",true);
-//         }
-//         return this;
-//     },
-//     deactivate(){
-//         let controller = this.controllerFor("account/pwd");
-//         let p_controller = this.controllerFor("account");
-//         controller.set("isActive",false);
-//         p_controller.set("isBack",false);
-//         controller.send("unloadRecord");
-//         return this;
-//     },
-// 	actions:{
-// 		goBack(){
-//             this.transitionTo('account');
-// 		}
-// 	}
-// });
 define('htis/routes/account', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
     exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
         controllerName: 'account',
@@ -7885,6 +7755,148 @@ define('htis/routes/account', ['exports', 'ember', 'htis/mixins/navigable-pane/r
 //             this.transitionTo('index');
 //         }
 //     }
+// });
+define('htis/routes/account/info', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
+        controllerName: 'account.info',
+        parentControllerName: "account"
+    });
+});
+// import Ember from 'ember';
+
+// export default Ember.Route.extend({
+//     activate(){
+//         let controller = this.controllerFor("account.info");
+//         let p_controller = this.controllerFor("account");
+//         if(Ember.$.support.transition){
+//             Ember.run.next(()=>{
+//             	//这里要加later的原因是有时next执行得太快没有动画效果
+//     	        // Ember.run.later(()=>{
+//     	            controller.set("isActive",true);
+//     		        p_controller.set("isBack",true);
+//     	        // },100);
+//             });
+//         }
+//         else{
+//             controller.set("isActive",true);
+//             p_controller.set("isBack",true);
+//         }
+//         return this;
+//     },
+//     deactivate(){
+//         let controller = this.controllerFor("account.info");
+//         let p_controller = this.controllerFor("account");
+//         controller.set("isActive",false);
+//         p_controller.set("isBack",false);
+//         return this;
+//     },
+// 	actions:{
+// 		goBack(){
+//             this.transitionTo('account');
+// 		}
+// 	}
+// });
+define('htis/routes/account/info/edit', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Route.extend({
+        controllerName: 'account.info',
+        renderTemplate: function renderTemplate(controller) {
+            this.render('account/info', { outlet: 'account/info', controller: controller });
+        },
+        activate: function activate() {
+            var controller = this.controllerFor("account/info");
+            controller.set("isEditing", true);
+            return this;
+        },
+        deactivate: function deactivate() {
+            var controller = this.controller;
+            var model = controller.get("model");
+            if (model) {
+                model.rollbackAttributes();
+            }
+            return this;
+        },
+        actions: {
+            goIndex: function goIndex() {
+                this.transitionTo('account.info.index');
+            }
+        }
+    });
+});
+define('htis/routes/account/info/index', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Route.extend({
+        controllerName: 'account.info',
+        renderTemplate: function renderTemplate(controller) {
+            this.render('account/info', { outlet: 'account/info', controller: controller });
+        },
+        activate: function activate() {
+            var controller = this.controllerFor("account/info");
+            controller.set("isEditing", false);
+            return this;
+        },
+        actions: {
+            goEdit: function goEdit() {
+                this.transitionTo('account.info.edit');
+            }
+        }
+    });
+});
+define('htis/routes/account/pwd', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
+        controllerName: 'account.pwd',
+        parentControllerName: "account",
+        model: function model() {
+            var user = this.controllerFor("session").get("user");
+            return this.store.createRecord('accountpwd', {
+                user: user
+            });
+        },
+        deactivate: function deactivate() {
+            this._super();
+            this.controller.send("unloadRecord");
+            return this;
+        }
+    });
+});
+// import Ember from 'ember';
+
+// export default Ember.Route.extend({
+//     model(){
+//         let user = this.controllerFor("session").get("user");
+//         return this.store.createRecord('accountpwd',{
+//             user: user
+//         });
+//     },
+//     activate(){
+//         let controller = this.controllerFor("account/pwd");
+//         let p_controller = this.controllerFor("account");
+//         if(Ember.$.support.transition){
+//             Ember.run.next(()=>{
+//             	//这里要加later的原因是有时next执行得太快没有动画效果
+//     	        // Ember.run.later(()=>{
+//     	            controller.set("isActive",true);
+//     		        p_controller.set("isBack",true);
+//     	        // },100);
+//             });
+//         }
+//         else{
+//             controller.set("isActive",true);
+//             p_controller.set("isBack",true);
+//         }
+//         return this;
+//     },
+//     deactivate(){
+//         let controller = this.controllerFor("account/pwd");
+//         let p_controller = this.controllerFor("account");
+//         controller.set("isActive",false);
+//         p_controller.set("isBack",false);
+//         controller.send("unloadRecord");
+//         return this;
+//     },
+// 	actions:{
+// 		goBack(){
+//             this.transitionTo('account');
+// 		}
+// 	}
 // });
 define("htis/routes/application", ["exports", "ember"], function (exports, _ember) {
     exports["default"] = _ember["default"].Route.extend({
@@ -8021,69 +8033,37 @@ define("htis/routes/application", ["exports", "ember"], function (exports, _embe
         }
     });
 });
-define('htis/routes/history/bills/bill/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'history.bills.bill',
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("history").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/history/bills/bill', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
-        modelName: "bill",
-        controllerName: 'history.bills.bill',
-        parentControllerName: "history.bills",
-        isDeep: true,
-        model: function model(params) {
-            var curId = params['id'];
-            var record = this.store.peekRecord(this.modelName, curId);
-            if (!record && curId.indexOf("fixture") === 0) {
-                //如果没有找到记录，并且是fixture开头的新记录则创建一个新记录来匹配
-                return this.controllerFor(this.parentControllerName).createRecord();
-            } else {
-                //注意，这里如果没有找到记录，并且不是fixture开头的新记录，将返回null
-                return record;
-            }
-        },
-        afterModel: function afterModel(model, transition) {
-            if (!model) {
-                transition.send("goBack");
-            }
-        }
-    });
-});
-define('htis/routes/history/bills/filter', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
-        controllerName: 'history.bills.filter',
-        parentControllerName: "history.bills",
+define("htis/routes/history", ["exports", "ember"], function (exports, _ember) {
+    exports["default"] = _ember["default"].Route.extend({
         activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            controller.set("isConfirmingCancel", false);
-            var p_controller = this.controllerFor(this.parentControllerName);
-            controller.send("syncOption", p_controller.get("filterOption"));
-            return this._super();
+            var controller = this.controllerFor("history");
+            controller.set("isActive", true);
+            return this;
         },
         deactivate: function deactivate() {
-            return this._super();
+            this.send("unloadArchiveds");
+            var controller = this.controllerFor("history");
+            controller.set("isActive", false);
+            return this;
         },
         actions: {
-            willTransition: function willTransition() {
-                this.set("controller.confirmCancelTransition", null);
-                if (this.get("controller.isConfirmed")) {
-                    this.set("controller.isConfirmed", false);
-                    return true;
-                } else {
-                    return true;
+            didTransition: function didTransition() {
+                if (this.controller.get("equipment.isXs")) {
+                    return;
                 }
-                return true;
+                //当发现没有选项时选中默认的roles
+                if (!this.controller.get("selection")) {
+                    this.replaceWith('history.bills');
+                }
+            },
+            goHome: function goHome() {
+                this.transitionTo('start');
+            },
+            goBills: function goBills() {
+                this.transitionTo('history.bills');
+            },
+            goReports: function goReports() {
+                this.transitionTo('history.reports');
             }
         }
     });
@@ -8126,10 +8106,49 @@ define('htis/routes/history/bills', ['exports', 'ember', 'htis/mixins/standard-l
         }
     });
 });
-define('htis/routes/history/reports/filter', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
+define('htis/routes/history/bills/bill', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
+        modelName: "bill",
+        controllerName: 'history.bills.bill',
+        parentControllerName: "history.bills",
+        isDeep: true,
+        model: function model(params) {
+            var curId = params['id'];
+            var record = this.store.peekRecord(this.modelName, curId);
+            if (!record && curId.indexOf("fixture") === 0) {
+                //如果没有找到记录，并且是fixture开头的新记录则创建一个新记录来匹配
+                return this.controllerFor(this.parentControllerName).createRecord();
+            } else {
+                //注意，这里如果没有找到记录，并且不是fixture开头的新记录，将返回null
+                return record;
+            }
+        },
+        afterModel: function afterModel(model, transition) {
+            if (!model) {
+                transition.send("goBack");
+            }
+        }
+    });
+});
+define('htis/routes/history/bills/bill/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'history.bills.bill',
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("history").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/history/bills/filter', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
     exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
-        controllerName: 'history.reports.filter',
-        parentControllerName: "history.reports",
+        controllerName: 'history.bills.filter',
+        parentControllerName: "history.bills",
         activate: function activate() {
             var controller = this.controllerFor(this.controllerName);
             controller.set("isConfirmingCancel", false);
@@ -8179,37 +8198,30 @@ define('htis/routes/history/reports', ['exports', 'ember', 'htis/mixins/standard
         }
     });
 });
-define("htis/routes/history", ["exports", "ember"], function (exports, _ember) {
-    exports["default"] = _ember["default"].Route.extend({
+define('htis/routes/history/reports/filter', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
+        controllerName: 'history.reports.filter',
+        parentControllerName: "history.reports",
         activate: function activate() {
-            var controller = this.controllerFor("history");
-            controller.set("isActive", true);
-            return this;
+            var controller = this.controllerFor(this.controllerName);
+            controller.set("isConfirmingCancel", false);
+            var p_controller = this.controllerFor(this.parentControllerName);
+            controller.send("syncOption", p_controller.get("filterOption"));
+            return this._super();
         },
         deactivate: function deactivate() {
-            this.send("unloadArchiveds");
-            var controller = this.controllerFor("history");
-            controller.set("isActive", false);
-            return this;
+            return this._super();
         },
         actions: {
-            didTransition: function didTransition() {
-                if (this.controller.get("equipment.isXs")) {
-                    return;
+            willTransition: function willTransition() {
+                this.set("controller.confirmCancelTransition", null);
+                if (this.get("controller.isConfirmed")) {
+                    this.set("controller.isConfirmed", false);
+                    return true;
+                } else {
+                    return true;
                 }
-                //当发现没有选项时选中默认的roles
-                if (!this.controller.get("selection")) {
-                    this.replaceWith('history.bills');
-                }
-            },
-            goHome: function goHome() {
-                this.transitionTo('start');
-            },
-            goBills: function goBills() {
-                this.transitionTo('history.bills');
-            },
-            goReports: function goReports() {
-                this.transitionTo('history.reports');
+                return true;
             }
         }
     });
@@ -8249,379 +8261,6 @@ define("htis/routes/login", ["exports", "ember"], function (exports, _ember) {
                 _this.store.unloadAll("login");
             });
             return this;
-        }
-    });
-});
-define('htis/routes/manage/archives/archive/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'manage.archives.archive',
-        activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            controller.set("isBaseFolded", false);
-            return this._super();
-        }
-    });
-});
-define('htis/routes/manage/archives/archive/restore', ['exports', 'ember', 'htis/mixins/instance-detail/restore-car-route'], function (exports, _ember, _htisMixinsInstanceDetailRestoreCarRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailRestoreCarRoute['default'], {
-        controllerName: 'manage.archives.archive'
-    });
-});
-define('htis/routes/manage/archives/archive', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
-							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
-														modelName: "car",
-														controllerName: 'manage.archives.archive',
-														parentControllerName: "manage.archives",
-														actions: {
-																					didTransition: function didTransition() {
-																												var controller = this.controller;
-																												if (controller.get("model.is_archived")) {
-																																			return this._super();
-																												} else {
-																																			this.send("goBack");
-																												}
-																					}
-														}
-							});
-});
-define('htis/routes/manage/archives/index', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/archives', ['exports', 'ember', 'htis/mixins/standard-list/route', 'htis/mixins/archive-cars/route'], function (exports, _ember, _htisMixinsStandardListRoute, _htisMixinsArchiveCarsRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], _htisMixinsArchiveCarsRoute['default'], {
-        modelName: "archive",
-        controllerName: 'manage.archives',
-        parentControllerName: "manage",
-        model: function model() {
-            return this.store.peekAll('car');
-        },
-        actions: {
-            goNew: function goNew() {
-                return true;
-            }
-        }
-    });
-});
-define('htis/routes/manage/cars/car/edit', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/cars/car', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/cars/new', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/cars', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/disables/disable/archive', ['exports', 'ember', 'htis/mixins/instance-detail/archive-car-route'], function (exports, _ember, _htisMixinsInstanceDetailArchiveCarRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailArchiveCarRoute['default'], {
-        controllerName: 'manage.disables.disable',
-        statusName: 'isDisable'
-    });
-});
-define('htis/routes/manage/disables/disable/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'manage.disables.disable',
-        activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            controller.set("isBaseFolded", false);
-            return this._super();
-        }
-    });
-});
-define('htis/routes/manage/disables/disable/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
-        controllerName: 'manage.disables.disable',
-        statusName: 'isDisable'
-    });
-});
-define('htis/routes/manage/disables/disable', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
-							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
-														modelName: "car",
-														controllerName: 'manage.disables.disable',
-														parentControllerName: "manage.disables",
-														actions: {
-																					didTransition: function didTransition() {
-																												var controller = this.controller;
-																												if (controller.get("model.isDisable")) {
-																																			return this._super();
-																												} else {
-																																			this.send("goBack");
-																												}
-																					}
-														}
-							});
-});
-define('htis/routes/manage/disables/index', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/disables', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "disable",
-        controllerName: 'manage.disables',
-        parentControllerName: "manage",
-        model: function model() {
-            return this.store.peekAll('car');
-        },
-        actions: {
-            goNew: function goNew() {
-                return true;
-            }
-        }
-    });
-});
-define('htis/routes/manage/new', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/pendings/index', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/pendings/pending/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'manage.pendings.pending',
-        activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            controller.set("isBaseFolded", false);
-            return this._super();
-        }
-    });
-});
-define('htis/routes/manage/pendings/pending/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
-        controllerName: 'manage.pendings.pending',
-        statusName: 'isPending'
-    });
-});
-define('htis/routes/manage/pendings/pending', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
-							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
-														modelName: "car",
-														controllerName: 'manage.pendings.pending',
-														parentControllerName: "manage.pendings",
-														actions: {
-																					didTransition: function didTransition() {
-																												var controller = this.controller;
-																												if (controller.get("model.isPending")) {
-																																			return this._super();
-																												} else {
-																																			this.send("goBack");
-																												}
-																					}
-														}
-							});
-});
-define('htis/routes/manage/pendings', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "pending",
-        controllerName: 'manage.pendings',
-        parentControllerName: "manage",
-        model: function model() {
-            return this.store.peekAll('car');
-        },
-        actions: {
-            goNew: function goNew() {
-                return true;
-            }
-        }
-    });
-});
-define('htis/routes/manage/releases/index', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/releases/release/archive', ['exports', 'ember', 'htis/mixins/instance-detail/archive-car-route'], function (exports, _ember, _htisMixinsInstanceDetailArchiveCarRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailArchiveCarRoute['default'], {
-        controllerName: 'manage.releases.release',
-        statusName: 'isReleased'
-    });
-});
-define('htis/routes/manage/releases/release/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'manage.releases.release',
-        activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            controller.set("isBaseFolded", false);
-            return this._super();
-        }
-    });
-});
-define('htis/routes/manage/releases/release/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
-        controllerName: 'manage.releases.release',
-        statusName: 'isReleased'
-    });
-});
-define('htis/routes/manage/releases/release', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
-							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
-														modelName: "car",
-														controllerName: 'manage.releases.release',
-														parentControllerName: "manage.releases",
-														actions: {
-																					didTransition: function didTransition() {
-																												var controller = this.controller;
-																												if (controller.get("model.isReleased")) {
-																																			return this._super();
-																												} else {
-																																			this.send("goBack");
-																												}
-																					}
-														}
-							});
-});
-define('htis/routes/manage/releases', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "release",
-        controllerName: 'manage.releases',
-        parentControllerName: "manage",
-        model: function model() {
-            return this.store.peekAll('car');
-        },
-        actions: {
-            goNew: function goNew() {
-                return true;
-            }
-        }
-    });
-});
-define('htis/routes/manage/searchs/index', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/searchs/search/archive', ['exports', 'ember', 'htis/mixins/instance-detail/archive-car-route'], function (exports, _ember, _htisMixinsInstanceDetailArchiveCarRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailArchiveCarRoute['default'], {
-        controllerName: 'manage.searchs.search',
-        statusName: 'isSearch'
-    });
-});
-define('htis/routes/manage/searchs/search/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'manage.searchs.search',
-        activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            controller.set("isBaseFolded", false);
-            return this._super();
-        }
-    });
-});
-define('htis/routes/manage/searchs/search/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
-        controllerName: 'manage.searchs.search',
-        statusName: 'isSearch'
-    });
-});
-define('htis/routes/manage/searchs/search/restore', ['exports', 'ember', 'htis/mixins/instance-detail/restore-car-route'], function (exports, _ember, _htisMixinsInstanceDetailRestoreCarRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailRestoreCarRoute['default'], {
-        controllerName: 'manage.searchs.search'
-    });
-});
-define('htis/routes/manage/searchs/search', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
-        modelName: "car",
-        controllerName: 'manage.searchs.search',
-        parentControllerName: "manage.searchs"
-    });
-});
-define('htis/routes/manage/searchs', ['exports', 'ember', 'htis/mixins/standard-list/route', 'htis/mixins/archive-cars/route'], function (exports, _ember, _htisMixinsStandardListRoute, _htisMixinsArchiveCarsRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], _htisMixinsArchiveCarsRoute['default'], {
-        modelName: "search",
-        controllerName: 'manage.searchs',
-        parentControllerName: "manage",
-        model: function model() {
-            return this.store.peekAll('car');
-        },
-        actions: {
-            goNew: function goNew() {
-                return true;
-            }
-        }
-    });
-});
-define('htis/routes/manage/unuseds/index', ['exports', 'ember'], function (exports, _ember) {
-  exports['default'] = _ember['default'].Route.extend({});
-});
-define('htis/routes/manage/unuseds/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
-        controllerName: 'manage.unuseds.unused',
-        parentControllerName: "manage.unuseds",
-        activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            controller.set("isBaseFolded", false);
-            return this._super();
-        },
-        model: function model() {
-            return this.controllerFor("manage").createRecord();
-        },
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("manage").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/manage/unuseds/unused/archive', ['exports', 'ember', 'htis/mixins/instance-detail/archive-car-route'], function (exports, _ember, _htisMixinsInstanceDetailArchiveCarRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailArchiveCarRoute['default'], {
-        controllerName: 'manage.unuseds.unused',
-        statusName: 'isUnused'
-    });
-});
-define('htis/routes/manage/unuseds/unused/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'manage.unuseds.unused',
-        activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            controller.set("isBaseFolded", false);
-            return this._super();
-        },
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("manage").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/manage/unuseds/unused/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
-        controllerName: 'manage.unuseds.unused',
-        statusName: 'isUnused'
-    });
-});
-define('htis/routes/manage/unuseds/unused', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
-							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
-														modelName: "car",
-														controllerName: 'manage.unuseds.unused',
-														parentControllerName: "manage.unuseds",
-														actions: {
-																					didTransition: function didTransition() {
-																												var controller = this.controller;
-																												if (controller.get("model.isUnused")) {
-																																			return this._super();
-																												} else {
-																																			this.send("goBack");
-																												}
-																					}
-														}
-							});
-});
-define('htis/routes/manage/unuseds', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "unused",
-        controllerName: 'manage.unuseds',
-        parentControllerName: "manage",
-        model: function model() {
-            return this.store.peekAll('car');
-        },
-        actions: {
-            goNew: function goNew() {
-                return true;
-            }
         }
     });
 });
@@ -8675,6 +8314,379 @@ define("htis/routes/manage", ["exports", "ember"], function (exports, _ember) {
         }
     });
 });
+define('htis/routes/manage/archives', ['exports', 'ember', 'htis/mixins/standard-list/route', 'htis/mixins/archive-cars/route'], function (exports, _ember, _htisMixinsStandardListRoute, _htisMixinsArchiveCarsRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], _htisMixinsArchiveCarsRoute['default'], {
+        modelName: "archive",
+        controllerName: 'manage.archives',
+        parentControllerName: "manage",
+        model: function model() {
+            return this.store.peekAll('car');
+        },
+        actions: {
+            goNew: function goNew() {
+                return true;
+            }
+        }
+    });
+});
+define('htis/routes/manage/archives/archive', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
+							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
+														modelName: "car",
+														controllerName: 'manage.archives.archive',
+														parentControllerName: "manage.archives",
+														actions: {
+																					didTransition: function didTransition() {
+																												var controller = this.controller;
+																												if (controller.get("model.is_archived")) {
+																																			return this._super();
+																												} else {
+																																			this.send("goBack");
+																												}
+																					}
+														}
+							});
+});
+define('htis/routes/manage/archives/archive/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'manage.archives.archive',
+        activate: function activate() {
+            var controller = this.controllerFor(this.controllerName);
+            controller.set("isBaseFolded", false);
+            return this._super();
+        }
+    });
+});
+define('htis/routes/manage/archives/archive/restore', ['exports', 'ember', 'htis/mixins/instance-detail/restore-car-route'], function (exports, _ember, _htisMixinsInstanceDetailRestoreCarRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailRestoreCarRoute['default'], {
+        controllerName: 'manage.archives.archive'
+    });
+});
+define('htis/routes/manage/archives/index', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/cars', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/cars/car', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/cars/car/edit', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/cars/new', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/disables', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "disable",
+        controllerName: 'manage.disables',
+        parentControllerName: "manage",
+        model: function model() {
+            return this.store.peekAll('car');
+        },
+        actions: {
+            goNew: function goNew() {
+                return true;
+            }
+        }
+    });
+});
+define('htis/routes/manage/disables/disable', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
+							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
+														modelName: "car",
+														controllerName: 'manage.disables.disable',
+														parentControllerName: "manage.disables",
+														actions: {
+																					didTransition: function didTransition() {
+																												var controller = this.controller;
+																												if (controller.get("model.isDisable")) {
+																																			return this._super();
+																												} else {
+																																			this.send("goBack");
+																												}
+																					}
+														}
+							});
+});
+define('htis/routes/manage/disables/disable/archive', ['exports', 'ember', 'htis/mixins/instance-detail/archive-car-route'], function (exports, _ember, _htisMixinsInstanceDetailArchiveCarRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailArchiveCarRoute['default'], {
+        controllerName: 'manage.disables.disable',
+        statusName: 'isDisable'
+    });
+});
+define('htis/routes/manage/disables/disable/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'manage.disables.disable',
+        activate: function activate() {
+            var controller = this.controllerFor(this.controllerName);
+            controller.set("isBaseFolded", false);
+            return this._super();
+        }
+    });
+});
+define('htis/routes/manage/disables/disable/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
+        controllerName: 'manage.disables.disable',
+        statusName: 'isDisable'
+    });
+});
+define('htis/routes/manage/disables/index', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/new', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/pendings', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "pending",
+        controllerName: 'manage.pendings',
+        parentControllerName: "manage",
+        model: function model() {
+            return this.store.peekAll('car');
+        },
+        actions: {
+            goNew: function goNew() {
+                return true;
+            }
+        }
+    });
+});
+define('htis/routes/manage/pendings/index', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/pendings/pending', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
+							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
+														modelName: "car",
+														controllerName: 'manage.pendings.pending',
+														parentControllerName: "manage.pendings",
+														actions: {
+																					didTransition: function didTransition() {
+																												var controller = this.controller;
+																												if (controller.get("model.isPending")) {
+																																			return this._super();
+																												} else {
+																																			this.send("goBack");
+																												}
+																					}
+														}
+							});
+});
+define('htis/routes/manage/pendings/pending/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'manage.pendings.pending',
+        activate: function activate() {
+            var controller = this.controllerFor(this.controllerName);
+            controller.set("isBaseFolded", false);
+            return this._super();
+        }
+    });
+});
+define('htis/routes/manage/pendings/pending/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
+        controllerName: 'manage.pendings.pending',
+        statusName: 'isPending'
+    });
+});
+define('htis/routes/manage/releases', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "release",
+        controllerName: 'manage.releases',
+        parentControllerName: "manage",
+        model: function model() {
+            return this.store.peekAll('car');
+        },
+        actions: {
+            goNew: function goNew() {
+                return true;
+            }
+        }
+    });
+});
+define('htis/routes/manage/releases/index', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/releases/release', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
+							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
+														modelName: "car",
+														controllerName: 'manage.releases.release',
+														parentControllerName: "manage.releases",
+														actions: {
+																					didTransition: function didTransition() {
+																												var controller = this.controller;
+																												if (controller.get("model.isReleased")) {
+																																			return this._super();
+																												} else {
+																																			this.send("goBack");
+																												}
+																					}
+														}
+							});
+});
+define('htis/routes/manage/releases/release/archive', ['exports', 'ember', 'htis/mixins/instance-detail/archive-car-route'], function (exports, _ember, _htisMixinsInstanceDetailArchiveCarRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailArchiveCarRoute['default'], {
+        controllerName: 'manage.releases.release',
+        statusName: 'isReleased'
+    });
+});
+define('htis/routes/manage/releases/release/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'manage.releases.release',
+        activate: function activate() {
+            var controller = this.controllerFor(this.controllerName);
+            controller.set("isBaseFolded", false);
+            return this._super();
+        }
+    });
+});
+define('htis/routes/manage/releases/release/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
+        controllerName: 'manage.releases.release',
+        statusName: 'isReleased'
+    });
+});
+define('htis/routes/manage/searchs', ['exports', 'ember', 'htis/mixins/standard-list/route', 'htis/mixins/archive-cars/route'], function (exports, _ember, _htisMixinsStandardListRoute, _htisMixinsArchiveCarsRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], _htisMixinsArchiveCarsRoute['default'], {
+        modelName: "search",
+        controllerName: 'manage.searchs',
+        parentControllerName: "manage",
+        model: function model() {
+            return this.store.peekAll('car');
+        },
+        actions: {
+            goNew: function goNew() {
+                return true;
+            }
+        }
+    });
+});
+define('htis/routes/manage/searchs/index', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/searchs/search', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
+        modelName: "car",
+        controllerName: 'manage.searchs.search',
+        parentControllerName: "manage.searchs"
+    });
+});
+define('htis/routes/manage/searchs/search/archive', ['exports', 'ember', 'htis/mixins/instance-detail/archive-car-route'], function (exports, _ember, _htisMixinsInstanceDetailArchiveCarRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailArchiveCarRoute['default'], {
+        controllerName: 'manage.searchs.search',
+        statusName: 'isSearch'
+    });
+});
+define('htis/routes/manage/searchs/search/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'manage.searchs.search',
+        activate: function activate() {
+            var controller = this.controllerFor(this.controllerName);
+            controller.set("isBaseFolded", false);
+            return this._super();
+        }
+    });
+});
+define('htis/routes/manage/searchs/search/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
+        controllerName: 'manage.searchs.search',
+        statusName: 'isSearch'
+    });
+});
+define('htis/routes/manage/searchs/search/restore', ['exports', 'ember', 'htis/mixins/instance-detail/restore-car-route'], function (exports, _ember, _htisMixinsInstanceDetailRestoreCarRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailRestoreCarRoute['default'], {
+        controllerName: 'manage.searchs.search'
+    });
+});
+define('htis/routes/manage/unuseds', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "unused",
+        controllerName: 'manage.unuseds',
+        parentControllerName: "manage",
+        model: function model() {
+            return this.store.peekAll('car');
+        },
+        actions: {
+            goNew: function goNew() {
+                return true;
+            }
+        }
+    });
+});
+define('htis/routes/manage/unuseds/index', ['exports', 'ember'], function (exports, _ember) {
+  exports['default'] = _ember['default'].Route.extend({});
+});
+define('htis/routes/manage/unuseds/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
+        controllerName: 'manage.unuseds.unused',
+        parentControllerName: "manage.unuseds",
+        activate: function activate() {
+            var controller = this.controllerFor(this.controllerName);
+            controller.set("isBaseFolded", false);
+            return this._super();
+        },
+        model: function model() {
+            return this.controllerFor("manage").createRecord();
+        },
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("manage").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/manage/unuseds/unused', ['exports', 'ember', 'htis/mixins/standard-detail/route', 'htis/mixins/instance-list/route', 'htis/mixins/instance-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute, _htisMixinsInstanceListRoute, _htisMixinsInstanceDetailRoute) {
+							exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], _htisMixinsInstanceListRoute['default'], _htisMixinsInstanceDetailRoute['default'], {
+														modelName: "car",
+														controllerName: 'manage.unuseds.unused',
+														parentControllerName: "manage.unuseds",
+														actions: {
+																					didTransition: function didTransition() {
+																												var controller = this.controller;
+																												if (controller.get("model.isUnused")) {
+																																			return this._super();
+																												} else {
+																																			this.send("goBack");
+																												}
+																					}
+														}
+							});
+});
+define('htis/routes/manage/unuseds/unused/archive', ['exports', 'ember', 'htis/mixins/instance-detail/archive-car-route'], function (exports, _ember, _htisMixinsInstanceDetailArchiveCarRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailArchiveCarRoute['default'], {
+        controllerName: 'manage.unuseds.unused',
+        statusName: 'isUnused'
+    });
+});
+define('htis/routes/manage/unuseds/unused/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'manage.unuseds.unused',
+        activate: function activate() {
+            var controller = this.controllerFor(this.controllerName);
+            controller.set("isBaseFolded", false);
+            return this._super();
+        },
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("manage").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/manage/unuseds/unused/newinstance', ['exports', 'ember', 'htis/mixins/instance-detail/new-route'], function (exports, _ember, _htisMixinsInstanceDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsInstanceDetailNewRoute['default'], {
+        controllerName: 'manage.unuseds.unused',
+        statusName: 'isUnused'
+    });
+});
 define("htis/routes/online", ["exports", "ember"], function (exports, _ember) {
     exports["default"] = _ember["default"].Route.extend({
         parentControllerName: "start",
@@ -8688,6 +8700,31 @@ define("htis/routes/online", ["exports", "ember"], function (exports, _ember) {
         actions: {
             goBack: function goBack() {
                 this.transitionTo(this.parentControllerName);
+            }
+        }
+    });
+});
+define('htis/routes/scanning', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
+        controllerName: 'scanning',
+        parentControllerName: "start",
+        activate: function activate() {
+            var controller = this.controllerFor(this.controllerName);
+            var p_controller = this.controllerFor(this.parentControllerName);
+            p_controller.set("isFolded", true);
+            controller.set("vinCode", "");
+            controller.set("isChecking", false);
+            controller.set("isConfirming", false);
+            return this._super();
+        },
+        actions: {
+            goFilling: function goFilling() {
+                this.transitionTo(this.controllerName + '.filling');
+            },
+            goBack: function goBack() {
+                //通知列表重新排序
+                this.controllerFor("start").notifyPropertyChange("model");
+                this._super();
             }
         }
     });
@@ -8780,340 +8817,6 @@ define('htis/routes/scanning/filling', ['exports', 'ember', 'htis/mixins/navigab
         }
     });
 });
-define('htis/routes/scanning', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
-        controllerName: 'scanning',
-        parentControllerName: "start",
-        activate: function activate() {
-            var controller = this.controllerFor(this.controllerName);
-            var p_controller = this.controllerFor(this.parentControllerName);
-            p_controller.set("isFolded", true);
-            controller.set("vinCode", "");
-            controller.set("isChecking", false);
-            controller.set("isConfirming", false);
-            return this._super();
-        },
-        actions: {
-            goFilling: function goFilling() {
-                this.transitionTo(this.controllerName + '.filling');
-            },
-            goBack: function goBack() {
-                //通知列表重新排序
-                this.controllerFor("start").notifyPropertyChange("model");
-                this._super();
-            }
-        }
-    });
-});
-define('htis/routes/setting/departments/department/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'setting.departments.department',
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/departments/department', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
-        modelName: "department",
-        controllerName: 'setting.departments.department',
-        parentControllerName: "setting.departments",
-        isDeep: true
-    });
-});
-define('htis/routes/setting/departments/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
-        controllerName: 'setting.departments.department',
-        parentControllerName: "setting.departments",
-        isDeep: true,
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/departments', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "department",
-        controllerName: 'setting.departments',
-        parentControllerName: "setting"
-    });
-});
-define('htis/routes/setting/oils/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
-        controllerName: 'setting.oils.oil',
-        parentControllerName: "setting.oils",
-        isDeep: true,
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/oils/oil/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'setting.oils.oil',
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/oils/oil', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
-        modelName: "oil",
-        controllerName: 'setting.oils.oil',
-        parentControllerName: "setting.oils",
-        isDeep: true
-    });
-});
-define('htis/routes/setting/oils', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "oil",
-        controllerName: 'setting.oils',
-        parentControllerName: "setting"
-    });
-});
-define('htis/routes/setting/preference/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'setting.preference',
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/preference', ['exports', 'ember', 'htis/mixins/fit-pane/route'], function (exports, _ember, _htisMixinsFitPaneRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsFitPaneRoute['default'], {
-        modelName: "preference",
-        controllerName: 'setting.preference',
-        parentControllerName: "setting",
-        model: function model() {
-            return this.store.peekAll(this.modelName).get("firstObject");
-        },
-        activate: function activate() {
-            var p_controller = this.controllerFor(this.parentControllerName);
-            p_controller.set('selection', '' + this.modelName);
-            return this._super();
-        },
-        deactivate: function deactivate() {
-            var p_controller = this.controllerFor(this.parentControllerName);
-            p_controller.set('selection', null);
-            return this._super();
-        },
-        actions: {
-            goBack: function goBack() {
-                this.transitionTo(this.parentControllerName);
-            },
-            goEdit: function goEdit() {
-                this.transitionTo(this.controllerName + '.edit');
-            }
-        }
-    });
-});
-define('htis/routes/setting/projects/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
-        controllerName: 'setting.projects.project',
-        parentControllerName: "setting.projects",
-        isDeep: true,
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/projects/project/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'setting.projects.project',
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/projects/project', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
-        modelName: "project",
-        controllerName: 'setting.projects.project',
-        parentControllerName: "setting.projects",
-        isDeep: true
-    });
-});
-define('htis/routes/setting/projects', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "project",
-        controllerName: 'setting.projects',
-        parentControllerName: "setting"
-    });
-});
-define('htis/routes/setting/roles/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
-        controllerName: 'setting.roles.role',
-        parentControllerName: "setting.roles",
-        isDeep: true,
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/roles/role/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'setting.roles.role',
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/roles/role', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
-        modelName: "role",
-        controllerName: 'setting.roles.role',
-        parentControllerName: "setting.roles",
-        isDeep: true
-    });
-});
-define('htis/routes/setting/roles', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "role",
-        controllerName: 'setting.roles',
-        parentControllerName: "setting"
-    });
-});
-define('htis/routes/setting/users/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
-        controllerName: 'setting.users.user',
-        parentControllerName: "setting.users",
-        isDeep: true,
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/users/user/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
-        controllerName: 'setting.users.user',
-        actions: {
-            willTransition: function willTransition(transition) {
-                if (this.controllerFor("setting").get("isPowered")) {
-                    return this._super(transition);
-                } else {
-                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
-                    return true;
-                }
-            }
-        }
-    });
-});
-define('htis/routes/setting/users/user/resetpwd', ['exports', 'ember'], function (exports, _ember) {
-    exports['default'] = _ember['default'].Route.extend({
-        renderTemplate: function renderTemplate(controller) {
-            this.render('setting/users/user/resetpwd', { into: 'setting/users', controller: controller });
-        },
-        model: function model() {
-            var curUserId = this.paramsFor("setting.users.user").id;
-            return this.store.createRecord('resetpwd', {
-                user: curUserId
-            });
-        },
-        deactivate: function deactivate() {
-            var controller = this.controller;
-            var model = controller.get("model");
-            if (model) {
-                model.rollbackAttributes();
-            }
-            return this;
-        },
-        actions: {
-            goIndex: function goIndex() {
-                this.transitionTo('setting.users.user');
-            }
-        }
-    });
-});
-define('htis/routes/setting/users/user', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
-        modelName: "user",
-        controllerName: 'setting.users.user',
-        parentControllerName: "setting.users",
-        isDeep: true,
-        actions: {
-            goResetpwd: function goResetpwd() {
-                this.transitionTo(this.controllerName + '.resetpwd');
-            }
-        }
-    });
-});
-define('htis/routes/setting/users', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
-        modelName: "user",
-        controllerName: 'setting.users',
-        parentControllerName: "setting"
-    });
-});
 define("htis/routes/setting", ["exports", "ember"], function (exports, _ember) {
     exports["default"] = _ember["default"].Route.extend({
         activate: function activate() {
@@ -9160,6 +8863,315 @@ define("htis/routes/setting", ["exports", "ember"], function (exports, _ember) {
         }
     });
 });
+define('htis/routes/setting/departments', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "department",
+        controllerName: 'setting.departments',
+        parentControllerName: "setting"
+    });
+});
+define('htis/routes/setting/departments/department', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
+        modelName: "department",
+        controllerName: 'setting.departments.department',
+        parentControllerName: "setting.departments",
+        isDeep: true
+    });
+});
+define('htis/routes/setting/departments/department/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'setting.departments.department',
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/departments/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
+        controllerName: 'setting.departments.department',
+        parentControllerName: "setting.departments",
+        isDeep: true,
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/oils', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "oil",
+        controllerName: 'setting.oils',
+        parentControllerName: "setting"
+    });
+});
+define('htis/routes/setting/oils/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
+        controllerName: 'setting.oils.oil',
+        parentControllerName: "setting.oils",
+        isDeep: true,
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/oils/oil', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
+        modelName: "oil",
+        controllerName: 'setting.oils.oil',
+        parentControllerName: "setting.oils",
+        isDeep: true
+    });
+});
+define('htis/routes/setting/oils/oil/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'setting.oils.oil',
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/preference', ['exports', 'ember', 'htis/mixins/fit-pane/route'], function (exports, _ember, _htisMixinsFitPaneRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsFitPaneRoute['default'], {
+        modelName: "preference",
+        controllerName: 'setting.preference',
+        parentControllerName: "setting",
+        model: function model() {
+            return this.store.peekAll(this.modelName).get("firstObject");
+        },
+        activate: function activate() {
+            var p_controller = this.controllerFor(this.parentControllerName);
+            p_controller.set('selection', '' + this.modelName);
+            return this._super();
+        },
+        deactivate: function deactivate() {
+            var p_controller = this.controllerFor(this.parentControllerName);
+            p_controller.set('selection', null);
+            return this._super();
+        },
+        actions: {
+            goBack: function goBack() {
+                this.transitionTo(this.parentControllerName);
+            },
+            goEdit: function goEdit() {
+                this.transitionTo(this.controllerName + '.edit');
+            }
+        }
+    });
+});
+define('htis/routes/setting/preference/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'setting.preference',
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/projects', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "project",
+        controllerName: 'setting.projects',
+        parentControllerName: "setting"
+    });
+});
+define('htis/routes/setting/projects/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
+        controllerName: 'setting.projects.project',
+        parentControllerName: "setting.projects",
+        isDeep: true,
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/projects/project', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
+        modelName: "project",
+        controllerName: 'setting.projects.project',
+        parentControllerName: "setting.projects",
+        isDeep: true
+    });
+});
+define('htis/routes/setting/projects/project/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'setting.projects.project',
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/roles', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "role",
+        controllerName: 'setting.roles',
+        parentControllerName: "setting"
+    });
+});
+define('htis/routes/setting/roles/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
+        controllerName: 'setting.roles.role',
+        parentControllerName: "setting.roles",
+        isDeep: true,
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/roles/role', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
+        modelName: "role",
+        controllerName: 'setting.roles.role',
+        parentControllerName: "setting.roles",
+        isDeep: true
+    });
+});
+define('htis/routes/setting/roles/role/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'setting.roles.role',
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/users', ['exports', 'ember', 'htis/mixins/standard-list/route'], function (exports, _ember, _htisMixinsStandardListRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardListRoute['default'], {
+        modelName: "user",
+        controllerName: 'setting.users',
+        parentControllerName: "setting"
+    });
+});
+define('htis/routes/setting/users/new', ['exports', 'ember', 'htis/mixins/standard-detail/new-route'], function (exports, _ember, _htisMixinsStandardDetailNewRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailNewRoute['default'], {
+        controllerName: 'setting.users.user',
+        parentControllerName: "setting.users",
+        isDeep: true,
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/users/user', ['exports', 'ember', 'htis/mixins/standard-detail/route'], function (exports, _ember, _htisMixinsStandardDetailRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailRoute['default'], {
+        modelName: "user",
+        controllerName: 'setting.users.user',
+        parentControllerName: "setting.users",
+        isDeep: true,
+        actions: {
+            goResetpwd: function goResetpwd() {
+                this.transitionTo(this.controllerName + '.resetpwd');
+            }
+        }
+    });
+});
+define('htis/routes/setting/users/user/edit', ['exports', 'ember', 'htis/mixins/standard-detail/edit-route'], function (exports, _ember, _htisMixinsStandardDetailEditRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsStandardDetailEditRoute['default'], {
+        controllerName: 'setting.users.user',
+        actions: {
+            willTransition: function willTransition(transition) {
+                if (this.controllerFor("setting").get("isPowered")) {
+                    return this._super(transition);
+                } else {
+                    //在没有权限，比如退出系统时，不需要也不可以做弹出confirm框确认，因为弹出框会被none-power框替代
+                    return true;
+                }
+            }
+        }
+    });
+});
+define('htis/routes/setting/users/user/resetpwd', ['exports', 'ember'], function (exports, _ember) {
+    exports['default'] = _ember['default'].Route.extend({
+        renderTemplate: function renderTemplate(controller) {
+            this.render('setting/users/user/resetpwd', { into: 'setting/users', controller: controller });
+        },
+        model: function model() {
+            var curUserId = this.paramsFor("setting.users.user").id;
+            return this.store.createRecord('resetpwd', {
+                user: curUserId
+            });
+        },
+        deactivate: function deactivate() {
+            var controller = this.controller;
+            var model = controller.get("model");
+            if (model) {
+                model.rollbackAttributes();
+            }
+            return this;
+        },
+        actions: {
+            goIndex: function goIndex() {
+                this.transitionTo('setting.users.user');
+            }
+        }
+    });
+});
 define("htis/routes/shortcut", ["exports", "ember"], function (exports, _ember) {
     exports["default"] = _ember["default"].Route.extend({
         parentControllerName: "start",
@@ -9200,27 +9212,6 @@ define("htis/routes/shortcut", ["exports", "ember"], function (exports, _ember) 
         }
     });
 });
-define('htis/routes/start/bill', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
-    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
-        modelName: "bill",
-        controllerName: 'start.bill',
-        parentControllerName: "start",
-        model: function model(params) {
-            var curId = params['id'];
-            return this.store.peekRecord(this.modelName, curId);
-        },
-        afterModel: function afterModel(model, transition) {
-            if (!model) {
-                transition.send("goBack");
-            }
-        },
-        activate: function activate() {
-            var p_controller = this.controllerFor(this.parentControllerName);
-            p_controller.set("isFolded", true);
-            return this._super();
-        }
-    });
-});
 define("htis/routes/start", ["exports", "ember"], function (exports, _ember) {
     exports["default"] = _ember["default"].Route.extend({
         beforeModel: function beforeModel(transition) {
@@ -9255,6 +9246,27 @@ define("htis/routes/start", ["exports", "ember"], function (exports, _ember) {
             goBill: function goBill(bill) {
                 this.transitionTo('start.bill', bill);
             }
+        }
+    });
+});
+define('htis/routes/start/bill', ['exports', 'ember', 'htis/mixins/navigable-pane/route'], function (exports, _ember, _htisMixinsNavigablePaneRoute) {
+    exports['default'] = _ember['default'].Route.extend(_htisMixinsNavigablePaneRoute['default'], {
+        modelName: "bill",
+        controllerName: 'start.bill',
+        parentControllerName: "start",
+        model: function model(params) {
+            var curId = params['id'];
+            return this.store.peekRecord(this.modelName, curId);
+        },
+        afterModel: function afterModel(model, transition) {
+            if (!model) {
+                transition.send("goBack");
+            }
+        },
+        activate: function activate() {
+            var p_controller = this.controllerFor(this.parentControllerName);
+            p_controller.set("isFolded", true);
+            return this._super();
         }
     });
 });
@@ -9606,8 +9618,149 @@ define('htis/services/equipment', ['exports', 'ember'], function (exports, _embe
 		isNotXs: _ember['default'].computed.not("isXs")
 	});
 });
-define("htis/templates/account/info/edit", ["exports"], function (exports) {
+define("htis/templates/account", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 182
+              },
+              "end": {
+                "line": 1,
+                "column": 991
+              }
+            },
+            "moduleName": "htis/templates/account.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createElement("div");
+            dom.setAttribute(el1, "class", "panel panel-primary");
+            var el2 = dom.createElement("div");
+            dom.setAttribute(el2, "class", "panel-heading text-center");
+            var el3 = dom.createElement("h3");
+            dom.setAttribute(el3, "class", "panel-title");
+            var el4 = dom.createElement("a");
+            dom.setAttribute(el4, "title", "返回");
+            dom.setAttribute(el4, "href", "javascript:void(0)");
+            dom.setAttribute(el4, "class", "btn-back pull-left");
+            var el5 = dom.createElement("div");
+            dom.setAttribute(el5, "class", "glyphicon glyphicon-arrow-left");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createElement("label");
+            dom.setAttribute(el5, "class", "sr-only");
+            var el6 = dom.createTextNode("返回");
+            dom.appendChild(el5, el6);
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("div");
+            dom.setAttribute(el2, "class", "panel-body panel-scroll");
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "list-group");
+            var el4 = dom.createElement("a");
+            dom.setAttribute(el4, "class", "list-group-item");
+            var el5 = dom.createTextNode("账户信息");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createElement("div");
+            dom.setAttribute(el5, "class", "glyphicon glyphicon-chevron-right pull-right");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            var el4 = dom.createElement("a");
+            dom.setAttribute(el4, "class", "list-group-item");
+            var el5 = dom.createTextNode("修改密码");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createElement("div");
+            dom.setAttribute(el5, "class", "glyphicon glyphicon-chevron-right pull-right");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "btns");
+            var el4 = dom.createElement("button");
+            dom.setAttribute(el4, "class", "btn btn-danger btn-block");
+            var el5 = dom.createTextNode("退出系统");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var element0 = dom.childAt(fragment, [0]);
+            var element1 = dom.childAt(element0, [0, 0]);
+            var element2 = dom.childAt(element1, [0]);
+            var element3 = dom.childAt(element0, [1]);
+            var element4 = dom.childAt(element3, [0]);
+            var element5 = dom.childAt(element4, [0]);
+            var element6 = dom.childAt(element4, [1]);
+            var element7 = dom.childAt(element3, [1, 0]);
+            var morphs = new Array(5);
+            morphs[0] = dom.createElementMorph(element2);
+            morphs[1] = dom.createMorphAt(element1, 1, 1);
+            morphs[2] = dom.createElementMorph(element5);
+            morphs[3] = dom.createElementMorph(element6);
+            morphs[4] = dom.createElementMorph(element7);
+            return morphs;
+          },
+          statements: [["element", "action", ["goBack"], [], ["loc", [null, [1, 366], [1, 385]]]], ["content", "pannelTitle", ["loc", [null, [1, 537], [1, 552]]]], ["element", "action", ["goAccountInfo"], [], ["loc", [null, [1, 627], [1, 653]]]], ["element", "action", ["goAccountPwd"], [], ["loc", [null, [1, 753], [1, 778]]]], ["element", "action", ["logout"], [], ["loc", [null, [1, 907], [1, 926]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 146
+            },
+            "end": {
+              "line": 1,
+              "column": 1020
+            }
+          },
+          "moduleName": "htis/templates/account.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 210], [1, 219]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 229], [1, 237]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 245], [1, 251]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 259], [1, 265]]]]], [], []]], 0, null, ["loc", [null, [1, 182], [1, 1010]]]], ["content", "outlet", ["loc", [null, [1, 1010], [1, 1020]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
     return {
       meta: {
         "revision": "Ember@1.13.11",
@@ -9619,10 +9772,10 @@ define("htis/templates/account/info/edit", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 10
+            "column": 1045
           }
         },
-        "moduleName": "htis/templates/account/info/edit.hbs"
+        "moduleName": "htis/templates/account.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -9631,58 +9784,25 @@ define("htis/templates/account/info/edit", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/account/info/index", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/account/info/index.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "id", "account");
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
+        var element8 = dom.childAt(fragment, [1]);
+        var morphs = new Array(3);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createAttrMorph(element8, 'class');
+        morphs[2] = dom.createMorphAt(element8, 0, 0);
         dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 96], [1, 130]]]], "is-folded"], [], ["loc", [null, [1, 91], [1, 144]]]]]]], ["block", "container-wrap", [], ["isBoxShadow", true], 0, null, ["loc", [null, [1, 146], [1, 1039]]]]],
       locals: [],
-      templates: []
+      templates: [child0]
     };
   })());
 });
@@ -10810,6 +10930,86 @@ define("htis/templates/account/info", ["exports"], function (exports) {
     };
   })());
 });
+define("htis/templates/account/info/edit", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/account/info/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/account/info/index", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/account/info/index.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("htis/templates/account/pwd", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -11257,194 +11457,6 @@ define("htis/templates/account/pwd", ["exports"], function (exports) {
         return morphs;
       },
       statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 28], [1, 37]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 47], [1, 55]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 63], [1, 69]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 77], [1, 83]]]]], [], []]], 0, null, ["loc", [null, [1, 0], [1, 2448]]]], ["content", "outlet", ["loc", [null, [1, 2448], [1, 2458]]]]],
-      locals: [],
-      templates: [child0]
-    };
-  })());
-});
-define("htis/templates/account", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 182
-              },
-              "end": {
-                "line": 1,
-                "column": 991
-              }
-            },
-            "moduleName": "htis/templates/account.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createElement("div");
-            dom.setAttribute(el1, "class", "panel panel-primary");
-            var el2 = dom.createElement("div");
-            dom.setAttribute(el2, "class", "panel-heading text-center");
-            var el3 = dom.createElement("h3");
-            dom.setAttribute(el3, "class", "panel-title");
-            var el4 = dom.createElement("a");
-            dom.setAttribute(el4, "title", "返回");
-            dom.setAttribute(el4, "href", "javascript:void(0)");
-            dom.setAttribute(el4, "class", "btn-back pull-left");
-            var el5 = dom.createElement("div");
-            dom.setAttribute(el5, "class", "glyphicon glyphicon-arrow-left");
-            dom.appendChild(el4, el5);
-            var el5 = dom.createElement("label");
-            dom.setAttribute(el5, "class", "sr-only");
-            var el6 = dom.createTextNode("返回");
-            dom.appendChild(el5, el6);
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            var el4 = dom.createComment("");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("div");
-            dom.setAttribute(el2, "class", "panel-body panel-scroll");
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "list-group");
-            var el4 = dom.createElement("a");
-            dom.setAttribute(el4, "class", "list-group-item");
-            var el5 = dom.createTextNode("账户信息");
-            dom.appendChild(el4, el5);
-            var el5 = dom.createElement("div");
-            dom.setAttribute(el5, "class", "glyphicon glyphicon-chevron-right pull-right");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            var el4 = dom.createElement("a");
-            dom.setAttribute(el4, "class", "list-group-item");
-            var el5 = dom.createTextNode("修改密码");
-            dom.appendChild(el4, el5);
-            var el5 = dom.createElement("div");
-            dom.setAttribute(el5, "class", "glyphicon glyphicon-chevron-right pull-right");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "btns");
-            var el4 = dom.createElement("button");
-            dom.setAttribute(el4, "class", "btn btn-danger btn-block");
-            var el5 = dom.createTextNode("退出系统");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element0 = dom.childAt(fragment, [0]);
-            var element1 = dom.childAt(element0, [0, 0]);
-            var element2 = dom.childAt(element1, [0]);
-            var element3 = dom.childAt(element0, [1]);
-            var element4 = dom.childAt(element3, [0]);
-            var element5 = dom.childAt(element4, [0]);
-            var element6 = dom.childAt(element4, [1]);
-            var element7 = dom.childAt(element3, [1, 0]);
-            var morphs = new Array(5);
-            morphs[0] = dom.createElementMorph(element2);
-            morphs[1] = dom.createMorphAt(element1, 1, 1);
-            morphs[2] = dom.createElementMorph(element5);
-            morphs[3] = dom.createElementMorph(element6);
-            morphs[4] = dom.createElementMorph(element7);
-            return morphs;
-          },
-          statements: [["element", "action", ["goBack"], [], ["loc", [null, [1, 366], [1, 385]]]], ["content", "pannelTitle", ["loc", [null, [1, 537], [1, 552]]]], ["element", "action", ["goAccountInfo"], [], ["loc", [null, [1, 627], [1, 653]]]], ["element", "action", ["goAccountPwd"], [], ["loc", [null, [1, 753], [1, 778]]]], ["element", "action", ["logout"], [], ["loc", [null, [1, 907], [1, 926]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 146
-            },
-            "end": {
-              "line": 1,
-              "column": 1020
-            }
-          },
-          "moduleName": "htis/templates/account.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 210], [1, 219]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 229], [1, 237]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 245], [1, 251]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 259], [1, 265]]]]], [], []]], 0, null, ["loc", [null, [1, 182], [1, 1010]]]], ["content", "outlet", ["loc", [null, [1, 1010], [1, 1020]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 1045
-          }
-        },
-        "moduleName": "htis/templates/account.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "id", "account");
-        var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element8 = dom.childAt(fragment, [1]);
-        var morphs = new Array(3);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        morphs[1] = dom.createAttrMorph(element8, 'class');
-        morphs[2] = dom.createMorphAt(element8, 0, 0);
-        dom.insertBoundary(fragment, 0);
-        return morphs;
-      },
-      statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 96], [1, 130]]]], "is-folded"], [], ["loc", [null, [1, 91], [1, 144]]]]]]], ["block", "container-wrap", [], ["isBoxShadow", true], 0, null, ["loc", [null, [1, 146], [1, 1039]]]]],
       locals: [],
       templates: [child0]
     };
@@ -16996,8 +17008,396 @@ define("htis/templates/detail-fix", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/history/bills/bill/edit", ["exports"], function (exports) {
+define("htis/templates/history", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      var child0 = (function () {
+        var child0 = (function () {
+          var child0 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1049
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1125
+                  }
+                },
+                "moduleName": "htis/templates/history.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child1 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1297
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1375
+                  }
+                },
+                "moduleName": "htis/templates/history.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 233
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1404
+                }
+              },
+              "moduleName": "htis/templates/history.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("div");
+              dom.setAttribute(el1, "class", "panel");
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "panel-heading text-center");
+              var el3 = dom.createElement("h3");
+              dom.setAttribute(el3, "class", "panel-title");
+              var el4 = dom.createElement("a");
+              dom.setAttribute(el4, "title", "返回");
+              dom.setAttribute(el4, "href", "javascript:void(0)");
+              dom.setAttribute(el4, "class", "btn-home pull-left");
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-home");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("label");
+              dom.setAttribute(el5, "class", "sr-only");
+              var el6 = dom.createTextNode("返回");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              dom.setAttribute(el4, "title", "通知中心");
+              dom.setAttribute(el4, "href", "javascript:void(0)");
+              dom.setAttribute(el4, "class", "btn-bell pull-right");
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "bell-count");
+              var el6 = dom.createComment("");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-bell");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("label");
+              dom.setAttribute(el5, "class", "sr-only");
+              var el6 = dom.createTextNode("通知中心");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createComment("");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "panel-scroll");
+              var el3 = dom.createElement("div");
+              dom.setAttribute(el3, "class", "list-group list-full");
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("明细");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("报表");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var element0 = dom.childAt(fragment, [0]);
+              var element1 = dom.childAt(element0, [0, 0]);
+              var element2 = dom.childAt(element1, [0]);
+              var element3 = dom.childAt(element1, [1]);
+              var element4 = dom.childAt(element0, [1, 0]);
+              var element5 = dom.childAt(element4, [0]);
+              var element6 = dom.childAt(element4, [1]);
+              var morphs = new Array(10);
+              morphs[0] = dom.createElementMorph(element2);
+              morphs[1] = dom.createElementMorph(element3);
+              morphs[2] = dom.createMorphAt(dom.childAt(element3, [0]), 0, 0);
+              morphs[3] = dom.createMorphAt(element1, 2, 2);
+              morphs[4] = dom.createAttrMorph(element5, 'class');
+              morphs[5] = dom.createElementMorph(element5);
+              morphs[6] = dom.createMorphAt(element5, 2, 2);
+              morphs[7] = dom.createAttrMorph(element6, 'class');
+              morphs[8] = dom.createElementMorph(element6);
+              morphs[9] = dom.createMorphAt(element6, 2, 2);
+              return morphs;
+            },
+            statements: [["element", "action", ["goHome"], [], ["loc", [null, [1, 403], [1, 422]]]], ["element", "action", ["goBell"], [], ["loc", [null, [1, 571], [1, 590]]]], ["content", "messagesController.model.length", ["loc", [null, [1, 682], [1, 717]]]], ["content", "pannelTitle", ["loc", [null, [1, 806], [1, 821]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isBills", ["loc", [null, [1, 944], [1, 951]]]], "active"], [], ["loc", [null, [1, 939], [1, 962]]]]]]], ["element", "action", ["goBills"], [], ["loc", [null, [1, 895], [1, 915]]]], ["block", "if", [["get", "isBills", ["loc", [null, [1, 1055], [1, 1062]]]]], [], 0, null, ["loc", [null, [1, 1049], [1, 1132]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isReports", ["loc", [null, [1, 1190], [1, 1199]]]], "active"], [], ["loc", [null, [1, 1185], [1, 1210]]]]]]], ["element", "action", ["goReports"], [], ["loc", [null, [1, 1139], [1, 1161]]]], ["block", "if", [["get", "isReports", ["loc", [null, [1, 1303], [1, 1312]]]]], [], 1, null, ["loc", [null, [1, 1297], [1, 1382]]]]],
+            locals: [],
+            templates: [child0, child1]
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 1423
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1455
+                }
+              },
+              "moduleName": "htis/templates/history.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+              dom.insertBoundary(fragment, 0);
+              dom.insertBoundary(fragment, null);
+              return morphs;
+            },
+            statements: [["content", "outlet", ["loc", [null, [1, 1445], [1, 1455]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 163
+              },
+              "end": {
+                "line": 1,
+                "column": 1462
+              }
+            },
+            "moduleName": "htis/templates/history.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 261], [1, 270]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 280], [1, 288]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 296], [1, 302]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 310], [1, 316]]]]], [], []]], 0, null, ["loc", [null, [1, 233], [1, 1423]]]], ["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 1429], [1, 1443]]]]], [], 1, null, ["loc", [null, [1, 1423], [1, 1462]]]]],
+          locals: [],
+          templates: [child0, child1]
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 1481
+              },
+              "end": {
+                "line": 1,
+                "column": 1516
+              }
+            },
+            "moduleName": "htis/templates/history.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["content", "outlet", ["loc", [null, [1, 1506], [1, 1516]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 146
+            },
+            "end": {
+              "line": 1,
+              "column": 1523
+            }
+          },
+          "moduleName": "htis/templates/history.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isLeft", ["subexpr", "@mut", [["get", "equipment.isNotXs", ["loc", [null, [1, 188], [1, 205]]]]], [], []], "class", "container-history"], 0, null, ["loc", [null, [1, 163], [1, 1481]]]], ["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 1487], [1, 1504]]]]], [], 1, null, ["loc", [null, [1, 1481], [1, 1523]]]]],
+        locals: [],
+        templates: [child0, child1]
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 1523
+            },
+            "end": {
+              "line": 1,
+              "column": 1563
+            }
+          },
+          "moduleName": "htis/templates/history.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "none-powered", [], ["action", "goHome"], ["loc", [null, [1, 1531], [1, 1563]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
     return {
       meta: {
         "revision": "Ember@1.13.11",
@@ -17009,10 +17409,177 @@ define("htis/templates/history/bills/bill/edit", ["exports"], function (exports)
           },
           "end": {
             "line": 1,
-            "column": 10
+            "column": 1576
           }
         },
-        "moduleName": "htis/templates/history/bills/bill/edit.hbs"
+        "moduleName": "htis/templates/history.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "id", "history");
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var element7 = dom.childAt(fragment, [1]);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createAttrMorph(element7, 'class');
+        morphs[2] = dom.createMorphAt(element7, 0, 0);
+        dom.insertBoundary(fragment, 0);
+        return morphs;
+      },
+      statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 96], [1, 130]]]], "is-folded"], [], ["loc", [null, [1, 91], [1, 144]]]]]]], ["block", "if", [["get", "isPowered", ["loc", [null, [1, 152], [1, 161]]]]], [], 0, 1, ["loc", [null, [1, 146], [1, 1570]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
+define("htis/templates/history/bills", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 74
+            }
+          },
+          "moduleName": "htis/templates/history/bills.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["history/navigable-pane-bills"], [], ["loc", [null, [1, 22], [1, 64]]]], ["content", "outlet", ["loc", [null, [1, 64], [1, 74]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 82
+              },
+              "end": {
+                "line": 1,
+                "column": 166
+              }
+            },
+            "moduleName": "htis/templates/history/bills.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["history/navigable-pane-bills"], [], ["loc", [null, [1, 114], [1, 156]]]], ["content", "outlet", ["loc", [null, [1, 156], [1, 166]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 74
+            },
+            "end": {
+              "line": 1,
+              "column": 185
+            }
+          },
+          "moduleName": "htis/templates/history/bills.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 82], [1, 185]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 192
+          }
+        },
+        "moduleName": "htis/templates/history/bills.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -17030,9 +17597,9 @@ define("htis/templates/history/bills/bill/edit", ["exports"], function (exports)
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 192]]]]],
       locals: [],
-      templates: []
+      templates: [child0, child1]
     };
   })());
 });
@@ -19132,6 +19699,46 @@ define("htis/templates/history/bills/bill", ["exports"], function (exports) {
     };
   })());
 });
+define("htis/templates/history/bills/bill/edit", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/history/bills/bill/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("htis/templates/history/bills/filter", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -20190,166 +20797,6 @@ define("htis/templates/history/bills/filter", ["exports"], function (exports) {
       statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 28], [1, 37]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 47], [1, 55]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 63], [1, 69]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 77], [1, 83]]]]], [], []]], 0, null, ["loc", [null, [1, 0], [1, 3035]]]], ["block", "if", [["get", "isPickingProject", ["loc", [null, [1, 3041], [1, 3057]]]]], [], 1, null, ["loc", [null, [1, 3035], [1, 3587]]]], ["block", "if", [["get", "isPickingDepartment", ["loc", [null, [1, 3593], [1, 3612]]]]], [], 2, null, ["loc", [null, [1, 3587], [1, 4157]]]]],
       locals: [],
       templates: [child0, child1, child2]
-    };
-  })());
-});
-define("htis/templates/history/bills", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 74
-            }
-          },
-          "moduleName": "htis/templates/history/bills.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["history/navigable-pane-bills"], [], ["loc", [null, [1, 22], [1, 64]]]], ["content", "outlet", ["loc", [null, [1, 64], [1, 74]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 82
-              },
-              "end": {
-                "line": 1,
-                "column": 166
-              }
-            },
-            "moduleName": "htis/templates/history/bills.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["history/navigable-pane-bills"], [], ["loc", [null, [1, 114], [1, 156]]]], ["content", "outlet", ["loc", [null, [1, 156], [1, 166]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 74
-            },
-            "end": {
-              "line": 1,
-              "column": 185
-            }
-          },
-          "moduleName": "htis/templates/history/bills.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 82], [1, 185]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 192
-          }
-        },
-        "moduleName": "htis/templates/history/bills.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 192]]]]],
-      locals: [],
-      templates: [child0, child1]
     };
   })());
 });
@@ -21547,6 +21994,166 @@ define("htis/templates/history/navigable-pane-reports", ["exports"], function (e
     };
   })());
 });
+define("htis/templates/history/reports", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 76
+            }
+          },
+          "moduleName": "htis/templates/history/reports.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["history/navigable-pane-reports"], [], ["loc", [null, [1, 22], [1, 66]]]], ["content", "outlet", ["loc", [null, [1, 66], [1, 76]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 84
+              },
+              "end": {
+                "line": 1,
+                "column": 192
+              }
+            },
+            "moduleName": "htis/templates/history/reports.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["history/navigable-pane-reports"], [], ["loc", [null, [1, 138], [1, 182]]]], ["content", "outlet", ["loc", [null, [1, 182], [1, 192]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 76
+            },
+            "end": {
+              "line": 1,
+              "column": 211
+            }
+          },
+          "moduleName": "htis/templates/history/reports.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isRight", true, "class", "print-content"], 0, null, ["loc", [null, [1, 84], [1, 211]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 218
+          }
+        },
+        "moduleName": "htis/templates/history/reports.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 218]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
 define("htis/templates/history/reports/filter", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -22182,601 +22789,6 @@ define("htis/templates/history/reports/filter", ["exports"], function (exports) 
     };
   })());
 });
-define("htis/templates/history/reports", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 76
-            }
-          },
-          "moduleName": "htis/templates/history/reports.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["history/navigable-pane-reports"], [], ["loc", [null, [1, 22], [1, 66]]]], ["content", "outlet", ["loc", [null, [1, 66], [1, 76]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 84
-              },
-              "end": {
-                "line": 1,
-                "column": 192
-              }
-            },
-            "moduleName": "htis/templates/history/reports.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["history/navigable-pane-reports"], [], ["loc", [null, [1, 138], [1, 182]]]], ["content", "outlet", ["loc", [null, [1, 182], [1, 192]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 76
-            },
-            "end": {
-              "line": 1,
-              "column": 211
-            }
-          },
-          "moduleName": "htis/templates/history/reports.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isRight", true, "class", "print-content"], 0, null, ["loc", [null, [1, 84], [1, 211]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 218
-          }
-        },
-        "moduleName": "htis/templates/history/reports.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 218]]]]],
-      locals: [],
-      templates: [child0, child1]
-    };
-  })());
-});
-define("htis/templates/history", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      var child0 = (function () {
-        var child0 = (function () {
-          var child0 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1049
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1125
-                  }
-                },
-                "moduleName": "htis/templates/history.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child1 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1297
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1375
-                  }
-                },
-                "moduleName": "htis/templates/history.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 233
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1404
-                }
-              },
-              "moduleName": "htis/templates/history.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("div");
-              dom.setAttribute(el1, "class", "panel");
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "panel-heading text-center");
-              var el3 = dom.createElement("h3");
-              dom.setAttribute(el3, "class", "panel-title");
-              var el4 = dom.createElement("a");
-              dom.setAttribute(el4, "title", "返回");
-              dom.setAttribute(el4, "href", "javascript:void(0)");
-              dom.setAttribute(el4, "class", "btn-home pull-left");
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-home");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("label");
-              dom.setAttribute(el5, "class", "sr-only");
-              var el6 = dom.createTextNode("返回");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              dom.setAttribute(el4, "title", "通知中心");
-              dom.setAttribute(el4, "href", "javascript:void(0)");
-              dom.setAttribute(el4, "class", "btn-bell pull-right");
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "bell-count");
-              var el6 = dom.createComment("");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-bell");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("label");
-              dom.setAttribute(el5, "class", "sr-only");
-              var el6 = dom.createTextNode("通知中心");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createComment("");
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "panel-scroll");
-              var el3 = dom.createElement("div");
-              dom.setAttribute(el3, "class", "list-group list-full");
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("明细");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("报表");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element0 = dom.childAt(fragment, [0]);
-              var element1 = dom.childAt(element0, [0, 0]);
-              var element2 = dom.childAt(element1, [0]);
-              var element3 = dom.childAt(element1, [1]);
-              var element4 = dom.childAt(element0, [1, 0]);
-              var element5 = dom.childAt(element4, [0]);
-              var element6 = dom.childAt(element4, [1]);
-              var morphs = new Array(10);
-              morphs[0] = dom.createElementMorph(element2);
-              morphs[1] = dom.createElementMorph(element3);
-              morphs[2] = dom.createMorphAt(dom.childAt(element3, [0]), 0, 0);
-              morphs[3] = dom.createMorphAt(element1, 2, 2);
-              morphs[4] = dom.createAttrMorph(element5, 'class');
-              morphs[5] = dom.createElementMorph(element5);
-              morphs[6] = dom.createMorphAt(element5, 2, 2);
-              morphs[7] = dom.createAttrMorph(element6, 'class');
-              morphs[8] = dom.createElementMorph(element6);
-              morphs[9] = dom.createMorphAt(element6, 2, 2);
-              return morphs;
-            },
-            statements: [["element", "action", ["goHome"], [], ["loc", [null, [1, 403], [1, 422]]]], ["element", "action", ["goBell"], [], ["loc", [null, [1, 571], [1, 590]]]], ["content", "messagesController.model.length", ["loc", [null, [1, 682], [1, 717]]]], ["content", "pannelTitle", ["loc", [null, [1, 806], [1, 821]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isBills", ["loc", [null, [1, 944], [1, 951]]]], "active"], [], ["loc", [null, [1, 939], [1, 962]]]]]]], ["element", "action", ["goBills"], [], ["loc", [null, [1, 895], [1, 915]]]], ["block", "if", [["get", "isBills", ["loc", [null, [1, 1055], [1, 1062]]]]], [], 0, null, ["loc", [null, [1, 1049], [1, 1132]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isReports", ["loc", [null, [1, 1190], [1, 1199]]]], "active"], [], ["loc", [null, [1, 1185], [1, 1210]]]]]]], ["element", "action", ["goReports"], [], ["loc", [null, [1, 1139], [1, 1161]]]], ["block", "if", [["get", "isReports", ["loc", [null, [1, 1303], [1, 1312]]]]], [], 1, null, ["loc", [null, [1, 1297], [1, 1382]]]]],
-            locals: [],
-            templates: [child0, child1]
-          };
-        })();
-        var child1 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 1423
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1455
-                }
-              },
-              "moduleName": "htis/templates/history.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createComment("");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-              dom.insertBoundary(fragment, 0);
-              dom.insertBoundary(fragment, null);
-              return morphs;
-            },
-            statements: [["content", "outlet", ["loc", [null, [1, 1445], [1, 1455]]]]],
-            locals: [],
-            templates: []
-          };
-        })();
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 163
-              },
-              "end": {
-                "line": 1,
-                "column": 1462
-              }
-            },
-            "moduleName": "htis/templates/history.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 261], [1, 270]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 280], [1, 288]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 296], [1, 302]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 310], [1, 316]]]]], [], []]], 0, null, ["loc", [null, [1, 233], [1, 1423]]]], ["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 1429], [1, 1443]]]]], [], 1, null, ["loc", [null, [1, 1423], [1, 1462]]]]],
-          locals: [],
-          templates: [child0, child1]
-        };
-      })();
-      var child1 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 1481
-              },
-              "end": {
-                "line": 1,
-                "column": 1516
-              }
-            },
-            "moduleName": "htis/templates/history.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(1);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["content", "outlet", ["loc", [null, [1, 1506], [1, 1516]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 146
-            },
-            "end": {
-              "line": 1,
-              "column": 1523
-            }
-          },
-          "moduleName": "htis/templates/history.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isLeft", ["subexpr", "@mut", [["get", "equipment.isNotXs", ["loc", [null, [1, 188], [1, 205]]]]], [], []], "class", "container-history"], 0, null, ["loc", [null, [1, 163], [1, 1481]]]], ["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 1487], [1, 1504]]]]], [], 1, null, ["loc", [null, [1, 1481], [1, 1523]]]]],
-        locals: [],
-        templates: [child0, child1]
-      };
-    })();
-    var child1 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 1523
-            },
-            "end": {
-              "line": 1,
-              "column": 1563
-            }
-          },
-          "moduleName": "htis/templates/history.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "none-powered", [], ["action", "goHome"], ["loc", [null, [1, 1531], [1, 1563]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 1576
-          }
-        },
-        "moduleName": "htis/templates/history.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "id", "history");
-        var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element7 = dom.childAt(fragment, [1]);
-        var morphs = new Array(3);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        morphs[1] = dom.createAttrMorph(element7, 'class');
-        morphs[2] = dom.createMorphAt(element7, 0, 0);
-        dom.insertBoundary(fragment, 0);
-        return morphs;
-      },
-      statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 96], [1, 130]]]], "is-folded"], [], ["loc", [null, [1, 91], [1, 144]]]]]]], ["block", "if", [["get", "isPowered", ["loc", [null, [1, 152], [1, 161]]]]], [], 0, 1, ["loc", [null, [1, 146], [1, 1570]]]]],
-      locals: [],
-      templates: [child0, child1]
-    };
-  })());
-});
 define("htis/templates/index", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
@@ -23085,131 +23097,444 @@ define("htis/templates/login", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/manage/archives/archive/edit", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/archives/archive/edit.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/archives/archive/restore", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/archives/archive/restore.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/archives/archive", ["exports"], function (exports) {
+define("htis/templates/manage", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 71
-            }
-          },
-          "moduleName": "htis/templates/manage/archives/archive.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["manage/navigable-pane-car"], [], ["loc", [null, [1, 22], [1, 61]]]], ["content", "outlet", ["loc", [null, [1, 61], [1, 71]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
       var child0 = (function () {
+        var child0 = (function () {
+          var child0 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1028
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1106
+                  }
+                },
+                "moduleName": "htis/templates/manage.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child1 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1281
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1360
+                  }
+                },
+                "moduleName": "htis/templates/manage.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child2 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1541
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1619
+                  }
+                },
+                "moduleName": "htis/templates/manage.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child3 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1795
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1874
+                  }
+                },
+                "moduleName": "htis/templates/manage.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child4 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 2055
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 2134
+                  }
+                },
+                "moduleName": "htis/templates/manage.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child5 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 2310
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 2389
+                  }
+                },
+                "moduleName": "htis/templates/manage.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 206
+                },
+                "end": {
+                  "line": 1,
+                  "column": 2418
+                }
+              },
+              "moduleName": "htis/templates/manage.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("div");
+              dom.setAttribute(el1, "class", "panel");
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "panel-heading text-center");
+              var el3 = dom.createElement("h3");
+              dom.setAttribute(el3, "class", "panel-title");
+              var el4 = dom.createElement("a");
+              dom.setAttribute(el4, "title", "返回");
+              dom.setAttribute(el4, "href", "javascript:void(0)");
+              dom.setAttribute(el4, "class", "btn-home pull-left");
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-home");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("label");
+              dom.setAttribute(el5, "class", "sr-only");
+              var el6 = dom.createTextNode("返回");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              dom.setAttribute(el4, "title", "通知中心");
+              dom.setAttribute(el4, "href", "javascript:void(0)");
+              dom.setAttribute(el4, "class", "btn-bell pull-right");
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "bell-count");
+              var el6 = dom.createComment("");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-bell");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("label");
+              dom.setAttribute(el5, "class", "sr-only");
+              var el6 = dom.createTextNode("通知中心");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createComment("");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "panel-scroll");
+              var el3 = dom.createElement("div");
+              dom.setAttribute(el3, "class", "list-group list-full");
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("搜索");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-search pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("待审核");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-time pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("待处理");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-warning-sign pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("可加油");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-inbox pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("已暂停");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-ban-circle pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("已闲置");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-cloud pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var element0 = dom.childAt(fragment, [0]);
+              var element1 = dom.childAt(element0, [0, 0]);
+              var element2 = dom.childAt(element1, [0]);
+              var element3 = dom.childAt(element1, [1]);
+              var element4 = dom.childAt(element0, [1, 0]);
+              var element5 = dom.childAt(element4, [0]);
+              var element6 = dom.childAt(element4, [1]);
+              var element7 = dom.childAt(element4, [2]);
+              var element8 = dom.childAt(element4, [3]);
+              var element9 = dom.childAt(element4, [4]);
+              var element10 = dom.childAt(element4, [5]);
+              var morphs = new Array(22);
+              morphs[0] = dom.createElementMorph(element2);
+              morphs[1] = dom.createElementMorph(element3);
+              morphs[2] = dom.createMorphAt(dom.childAt(element3, [0]), 0, 0);
+              morphs[3] = dom.createMorphAt(element1, 2, 2);
+              morphs[4] = dom.createAttrMorph(element5, 'class');
+              morphs[5] = dom.createElementMorph(element5);
+              morphs[6] = dom.createMorphAt(element5, 2, 2);
+              morphs[7] = dom.createAttrMorph(element6, 'class');
+              morphs[8] = dom.createElementMorph(element6);
+              morphs[9] = dom.createMorphAt(element6, 2, 2);
+              morphs[10] = dom.createAttrMorph(element7, 'class');
+              morphs[11] = dom.createElementMorph(element7);
+              morphs[12] = dom.createMorphAt(element7, 2, 2);
+              morphs[13] = dom.createAttrMorph(element8, 'class');
+              morphs[14] = dom.createElementMorph(element8);
+              morphs[15] = dom.createMorphAt(element8, 2, 2);
+              morphs[16] = dom.createAttrMorph(element9, 'class');
+              morphs[17] = dom.createElementMorph(element9);
+              morphs[18] = dom.createMorphAt(element9, 2, 2);
+              morphs[19] = dom.createAttrMorph(element10, 'class');
+              morphs[20] = dom.createElementMorph(element10);
+              morphs[21] = dom.createMorphAt(element10, 2, 2);
+              return morphs;
+            },
+            statements: [["element", "action", ["goHome"], [], ["loc", [null, [1, 376], [1, 395]]]], ["element", "action", ["goBell"], [], ["loc", [null, [1, 544], [1, 563]]]], ["content", "messagesController.model.length", ["loc", [null, [1, 655], [1, 690]]]], ["content", "pannelTitle", ["loc", [null, [1, 779], [1, 794]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isSearchs", ["loc", [null, [1, 919], [1, 928]]]], "active"], [], ["loc", [null, [1, 914], [1, 939]]]]]]], ["element", "action", ["goSearchs"], [], ["loc", [null, [1, 868], [1, 890]]]], ["block", "if", [["get", "isSearchs", ["loc", [null, [1, 1034], [1, 1043]]]]], [], 0, null, ["loc", [null, [1, 1028], [1, 1113]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isPendings", ["loc", [null, [1, 1172], [1, 1182]]]], "active"], [], ["loc", [null, [1, 1167], [1, 1193]]]]]]], ["element", "action", ["goPendings"], [], ["loc", [null, [1, 1120], [1, 1143]]]], ["block", "if", [["get", "isPendings", ["loc", [null, [1, 1287], [1, 1297]]]]], [], 1, null, ["loc", [null, [1, 1281], [1, 1367]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isUnuseds", ["loc", [null, [1, 1425], [1, 1434]]]], "active"], [], ["loc", [null, [1, 1420], [1, 1445]]]]]]], ["element", "action", ["goUnuseds"], [], ["loc", [null, [1, 1374], [1, 1396]]]], ["block", "if", [["get", "isUnuseds", ["loc", [null, [1, 1547], [1, 1556]]]]], [], 2, null, ["loc", [null, [1, 1541], [1, 1626]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isReleases", ["loc", [null, [1, 1685], [1, 1695]]]], "active"], [], ["loc", [null, [1, 1680], [1, 1706]]]]]]], ["element", "action", ["goReleases"], [], ["loc", [null, [1, 1633], [1, 1656]]]], ["block", "if", [["get", "isReleases", ["loc", [null, [1, 1801], [1, 1811]]]]], [], 3, null, ["loc", [null, [1, 1795], [1, 1881]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isDisables", ["loc", [null, [1, 1940], [1, 1950]]]], "active"], [], ["loc", [null, [1, 1935], [1, 1961]]]]]]], ["element", "action", ["goDisables"], [], ["loc", [null, [1, 1888], [1, 1911]]]], ["block", "if", [["get", "isDisables", ["loc", [null, [1, 2061], [1, 2071]]]]], [], 4, null, ["loc", [null, [1, 2055], [1, 2141]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isArchives", ["loc", [null, [1, 2200], [1, 2210]]]], "active"], [], ["loc", [null, [1, 2195], [1, 2221]]]]]]], ["element", "action", ["goArchives"], [], ["loc", [null, [1, 2148], [1, 2171]]]], ["block", "if", [["get", "isArchives", ["loc", [null, [1, 2316], [1, 2326]]]]], [], 5, null, ["loc", [null, [1, 2310], [1, 2396]]]]],
+            locals: [],
+            templates: [child0, child1, child2, child3, child4, child5]
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 2437
+                },
+                "end": {
+                  "line": 1,
+                  "column": 2469
+                }
+              },
+              "moduleName": "htis/templates/manage.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+              dom.insertBoundary(fragment, 0);
+              dom.insertBoundary(fragment, null);
+              return morphs;
+            },
+            statements: [["content", "outlet", ["loc", [null, [1, 2459], [1, 2469]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
         return {
           meta: {
             "revision": "Ember@1.13.11",
@@ -23217,14 +23542,55 @@ define("htis/templates/manage/archives/archive", ["exports"], function (exports)
               "source": null,
               "start": {
                 "line": 1,
-                "column": 79
+                "column": 162
               },
               "end": {
                 "line": 1,
-                "column": 163
+                "column": 2476
               }
             },
-            "moduleName": "htis/templates/manage/archives/archive.hbs"
+            "moduleName": "htis/templates/manage.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 234], [1, 243]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 253], [1, 261]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 269], [1, 275]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 283], [1, 289]]]]], [], []]], 0, null, ["loc", [null, [1, 206], [1, 2437]]]], ["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 2443], [1, 2457]]]]], [], 1, null, ["loc", [null, [1, 2437], [1, 2476]]]]],
+          locals: [],
+          templates: [child0, child1]
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 2495
+              },
+              "end": {
+                "line": 1,
+                "column": 2530
+              }
+            },
+            "moduleName": "htis/templates/manage.hbs"
           },
           arity: 0,
           cachedFragment: null,
@@ -23242,7 +23608,7 @@ define("htis/templates/manage/archives/archive", ["exports"], function (exports)
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["inline", "partial", ["manage/navigable-pane-car"], [], ["loc", [null, [1, 124], [1, 163]]]]],
+          statements: [["content", "outlet", ["loc", [null, [1, 2520], [1, 2530]]]]],
           locals: [],
           templates: []
         };
@@ -23254,14 +23620,14 @@ define("htis/templates/manage/archives/archive", ["exports"], function (exports)
             "source": null,
             "start": {
               "line": 1,
-              "column": 71
+              "column": 145
             },
             "end": {
               "line": 1,
-              "column": 192
+              "column": 2537
             }
           },
-          "moduleName": "htis/templates/manage/archives/archive.hbs"
+          "moduleName": "htis/templates/manage.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -23282,52 +23648,12 @@ define("htis/templates/manage/archives/archive", ["exports"], function (exports)
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "container-wrap", [], ["isRight", true, "isMulti", true], 0, null, ["loc", [null, [1, 79], [1, 182]]]], ["content", "outlet", ["loc", [null, [1, 182], [1, 192]]]]],
+        statements: [["block", "container-wrap", [], ["isLeft", ["subexpr", "@mut", [["get", "equipment.isNotXs", ["loc", [null, [1, 187], [1, 204]]]]], [], []]], 0, null, ["loc", [null, [1, 162], [1, 2495]]]], ["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 2501], [1, 2518]]]]], [], 1, null, ["loc", [null, [1, 2495], [1, 2537]]]]],
         locals: [],
-        templates: [child0]
+        templates: [child0, child1]
       };
     })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 199
-          }
-        },
-        "moduleName": "htis/templates/manage/archives/archive.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 199]]]]],
-      locals: [],
-      templates: [child0, child1]
-    };
-  })());
-});
-define("htis/templates/manage/archives/index", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
+    var child1 = (function () {
       return {
         meta: {
           "revision": "Ember@1.13.11",
@@ -23335,14 +23661,14 @@ define("htis/templates/manage/archives/index", ["exports"], function (exports) {
             "source": null,
             "start": {
               "line": 1,
-              "column": 0
+              "column": 2537
             },
             "end": {
               "line": 1,
-              "column": 42
+              "column": 2577
             }
           },
-          "moduleName": "htis/templates/manage/archives/index.hbs"
+          "moduleName": "htis/templates/manage.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -23360,7 +23686,7 @@ define("htis/templates/manage/archives/index", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["content", "default-index", ["loc", [null, [1, 25], [1, 42]]]]],
+        statements: [["inline", "none-powered", [], ["action", "goHome"], ["loc", [null, [1, 2545], [1, 2577]]]]],
         locals: [],
         templates: []
       };
@@ -23376,10 +23702,10 @@ define("htis/templates/manage/archives/index", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 49
+            "column": 2590
           }
         },
-        "moduleName": "htis/templates/manage/archives/index.hbs"
+        "moduleName": "htis/templates/manage.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -23388,18 +23714,25 @@ define("htis/templates/manage/archives/index", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "id", "manage");
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
+        var element11 = dom.childAt(fragment, [1]);
+        var morphs = new Array(3);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createAttrMorph(element11, 'class');
+        morphs[2] = dom.createMorphAt(element11, 0, 0);
         dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 6], [1, 23]]]]], [], 0, null, ["loc", [null, [1, 0], [1, 49]]]]],
+      statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 95], [1, 129]]]], "is-folded"], [], ["loc", [null, [1, 90], [1, 143]]]]]]], ["block", "if", [["get", "isPowered", ["loc", [null, [1, 151], [1, 160]]]]], [], 0, 1, ["loc", [null, [1, 145], [1, 2584]]]]],
       locals: [],
-      templates: [child0]
+      templates: [child0, child1]
     };
   })());
 });
@@ -23563,7 +23896,167 @@ define("htis/templates/manage/archives", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/manage/cars/car/edit", ["exports"], function (exports) {
+define("htis/templates/manage/archives/archive", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 71
+            }
+          },
+          "moduleName": "htis/templates/manage/archives/archive.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["manage/navigable-pane-car"], [], ["loc", [null, [1, 22], [1, 61]]]], ["content", "outlet", ["loc", [null, [1, 61], [1, 71]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 79
+              },
+              "end": {
+                "line": 1,
+                "column": 163
+              }
+            },
+            "moduleName": "htis/templates/manage/archives/archive.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["manage/navigable-pane-car"], [], ["loc", [null, [1, 124], [1, 163]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 71
+            },
+            "end": {
+              "line": 1,
+              "column": 192
+            }
+          },
+          "moduleName": "htis/templates/manage/archives/archive.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isRight", true, "isMulti", true], 0, null, ["loc", [null, [1, 79], [1, 182]]]], ["content", "outlet", ["loc", [null, [1, 182], [1, 192]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 199
+          }
+        },
+        "moduleName": "htis/templates/manage/archives/archive.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 199]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
+define("htis/templates/manage/archives/archive/edit", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -23579,7 +24072,165 @@ define("htis/templates/manage/cars/car/edit", ["exports"], function (exports) {
             "column": 10
           }
         },
-        "moduleName": "htis/templates/manage/cars/car/edit.hbs"
+        "moduleName": "htis/templates/manage/archives/archive/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/archives/archive/restore", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/archives/archive/restore.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/archives/index", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 42
+            }
+          },
+          "moduleName": "htis/templates/manage/archives/index.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["content", "default-index", ["loc", [null, [1, 25], [1, 42]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 49
+          }
+        },
+        "moduleName": "htis/templates/manage/archives/index.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 6], [1, 23]]]]], [], 0, null, ["loc", [null, [1, 0], [1, 49]]]]],
+      locals: [],
+      templates: [child0]
+    };
+  })());
+});
+define("htis/templates/manage/cars", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/cars.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -23643,6 +24294,46 @@ define("htis/templates/manage/cars/car", ["exports"], function (exports) {
     };
   })());
 });
+define("htis/templates/manage/cars/car/edit", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/cars/car/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("htis/templates/manage/cars/new", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
@@ -23683,8 +24374,128 @@ define("htis/templates/manage/cars/new", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/manage/cars", ["exports"], function (exports) {
+define("htis/templates/manage/disables", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 72
+            }
+          },
+          "moduleName": "htis/templates/manage/disables.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 22], [1, 62]]]], ["content", "outlet", ["loc", [null, [1, 62], [1, 72]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 80
+              },
+              "end": {
+                "line": 1,
+                "column": 153
+              }
+            },
+            "moduleName": "htis/templates/manage/disables.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 113], [1, 153]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 72
+            },
+            "end": {
+              "line": 1,
+              "column": 182
+            }
+          },
+          "moduleName": "htis/templates/manage/disables.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isCenter", true], 0, null, ["loc", [null, [1, 80], [1, 172]]]], ["content", "outlet", ["loc", [null, [1, 172], [1, 182]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
     return {
       meta: {
         "revision": "Ember@1.13.11",
@@ -23696,10 +24507,10 @@ define("htis/templates/manage/cars", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 10
+            "column": 189
           }
         },
-        "moduleName": "htis/templates/manage/cars.hbs"
+        "moduleName": "htis/templates/manage/disables.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -23717,129 +24528,9 @@ define("htis/templates/manage/cars", ["exports"], function (exports) {
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 189]]]]],
       locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/disables/disable/archive", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/disables/disable/archive.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/disables/disable/edit", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/disables/disable/edit.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/disables/disable/newinstance", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/disables/disable/newinstance.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
+      templates: [child0, child1]
     };
   })());
 });
@@ -24003,6 +24694,126 @@ define("htis/templates/manage/disables/disable", ["exports"], function (exports)
     };
   })());
 });
+define("htis/templates/manage/disables/disable/archive", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/disables/disable/archive.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/disables/disable/edit", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/disables/disable/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/disables/disable/newinstance", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/disables/disable/newinstance.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("htis/templates/manage/disables/index", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -24078,166 +24889,6 @@ define("htis/templates/manage/disables/index", ["exports"], function (exports) {
       statements: [["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 6], [1, 23]]]]], [], 0, null, ["loc", [null, [1, 0], [1, 49]]]]],
       locals: [],
       templates: [child0]
-    };
-  })());
-});
-define("htis/templates/manage/disables", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 72
-            }
-          },
-          "moduleName": "htis/templates/manage/disables.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 22], [1, 62]]]], ["content", "outlet", ["loc", [null, [1, 62], [1, 72]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 80
-              },
-              "end": {
-                "line": 1,
-                "column": 153
-              }
-            },
-            "moduleName": "htis/templates/manage/disables.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(1);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 113], [1, 153]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 72
-            },
-            "end": {
-              "line": 1,
-              "column": 182
-            }
-          },
-          "moduleName": "htis/templates/manage/disables.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isCenter", true], 0, null, ["loc", [null, [1, 80], [1, 172]]]], ["content", "outlet", ["loc", [null, [1, 172], [1, 182]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 189
-          }
-        },
-        "moduleName": "htis/templates/manage/disables.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 189]]]]],
-      locals: [],
-      templates: [child0, child1]
     };
   })());
 });
@@ -27478,6 +28129,166 @@ define("htis/templates/manage/new", ["exports"], function (exports) {
     };
   })());
 });
+define("htis/templates/manage/pendings", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 72
+            }
+          },
+          "moduleName": "htis/templates/manage/pendings.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 22], [1, 62]]]], ["content", "outlet", ["loc", [null, [1, 62], [1, 72]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 80
+              },
+              "end": {
+                "line": 1,
+                "column": 153
+              }
+            },
+            "moduleName": "htis/templates/manage/pendings.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 113], [1, 153]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 72
+            },
+            "end": {
+              "line": 1,
+              "column": 182
+            }
+          },
+          "moduleName": "htis/templates/manage/pendings.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isCenter", true], 0, null, ["loc", [null, [1, 80], [1, 172]]]], ["content", "outlet", ["loc", [null, [1, 172], [1, 182]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 189
+          }
+        },
+        "moduleName": "htis/templates/manage/pendings.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 189]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
 define("htis/templates/manage/pendings/index", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -27553,86 +28364,6 @@ define("htis/templates/manage/pendings/index", ["exports"], function (exports) {
       statements: [["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 6], [1, 23]]]]], [], 0, null, ["loc", [null, [1, 0], [1, 49]]]]],
       locals: [],
       templates: [child0]
-    };
-  })());
-});
-define("htis/templates/manage/pendings/pending/edit", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/pendings/pending/edit.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/pendings/pending/newinstance", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/pendings/pending/newinstance.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
     };
   })());
 });
@@ -27796,245 +28527,7 @@ define("htis/templates/manage/pendings/pending", ["exports"], function (exports)
     };
   })());
 });
-define("htis/templates/manage/pendings", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 72
-            }
-          },
-          "moduleName": "htis/templates/manage/pendings.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 22], [1, 62]]]], ["content", "outlet", ["loc", [null, [1, 62], [1, 72]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 80
-              },
-              "end": {
-                "line": 1,
-                "column": 153
-              }
-            },
-            "moduleName": "htis/templates/manage/pendings.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(1);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 113], [1, 153]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 72
-            },
-            "end": {
-              "line": 1,
-              "column": 182
-            }
-          },
-          "moduleName": "htis/templates/manage/pendings.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isCenter", true], 0, null, ["loc", [null, [1, 80], [1, 172]]]], ["content", "outlet", ["loc", [null, [1, 172], [1, 182]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 189
-          }
-        },
-        "moduleName": "htis/templates/manage/pendings.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 189]]]]],
-      locals: [],
-      templates: [child0, child1]
-    };
-  })());
-});
-define("htis/templates/manage/releases/index", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 42
-            }
-          },
-          "moduleName": "htis/templates/manage/releases/index.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["content", "default-index", ["loc", [null, [1, 25], [1, 42]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 49
-          }
-        },
-        "moduleName": "htis/templates/manage/releases/index.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 6], [1, 23]]]]], [], 0, null, ["loc", [null, [1, 0], [1, 49]]]]],
-      locals: [],
-      templates: [child0]
-    };
-  })());
-});
-define("htis/templates/manage/releases/release/archive", ["exports"], function (exports) {
+define("htis/templates/manage/pendings/pending/edit", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -28050,7 +28543,7 @@ define("htis/templates/manage/releases/release/archive", ["exports"], function (
             "column": 10
           }
         },
-        "moduleName": "htis/templates/manage/releases/release/archive.hbs"
+        "moduleName": "htis/templates/manage/pendings/pending/edit.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -28074,7 +28567,7 @@ define("htis/templates/manage/releases/release/archive", ["exports"], function (
     };
   })());
 });
-define("htis/templates/manage/releases/release/edit", ["exports"], function (exports) {
+define("htis/templates/manage/pendings/pending/newinstance", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -28090,7 +28583,7 @@ define("htis/templates/manage/releases/release/edit", ["exports"], function (exp
             "column": 10
           }
         },
-        "moduleName": "htis/templates/manage/releases/release/edit.hbs"
+        "moduleName": "htis/templates/manage/pendings/pending/newinstance.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -28111,206 +28604,6 @@ define("htis/templates/manage/releases/release/edit", ["exports"], function (exp
       statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
       locals: [],
       templates: []
-    };
-  })());
-});
-define("htis/templates/manage/releases/release/newinstance", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/releases/release/newinstance.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/releases/release", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 71
-            }
-          },
-          "moduleName": "htis/templates/manage/releases/release.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["manage/navigable-pane-car"], [], ["loc", [null, [1, 22], [1, 61]]]], ["content", "outlet", ["loc", [null, [1, 61], [1, 71]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 79
-              },
-              "end": {
-                "line": 1,
-                "column": 163
-              }
-            },
-            "moduleName": "htis/templates/manage/releases/release.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(1);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["manage/navigable-pane-car"], [], ["loc", [null, [1, 124], [1, 163]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 71
-            },
-            "end": {
-              "line": 1,
-              "column": 192
-            }
-          },
-          "moduleName": "htis/templates/manage/releases/release.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isRight", true, "isMulti", true], 0, null, ["loc", [null, [1, 79], [1, 182]]]], ["content", "outlet", ["loc", [null, [1, 182], [1, 192]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 199
-          }
-        },
-        "moduleName": "htis/templates/manage/releases/release.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 199]]]]],
-      locals: [],
-      templates: [child0, child1]
     };
   })());
 });
@@ -28474,7 +28767,7 @@ define("htis/templates/manage/releases", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/manage/searchs/index", ["exports"], function (exports) {
+define("htis/templates/manage/releases/index", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
       return {
@@ -28491,7 +28784,7 @@ define("htis/templates/manage/searchs/index", ["exports"], function (exports) {
               "column": 42
             }
           },
-          "moduleName": "htis/templates/manage/searchs/index.hbs"
+          "moduleName": "htis/templates/manage/releases/index.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -28528,7 +28821,7 @@ define("htis/templates/manage/searchs/index", ["exports"], function (exports) {
             "column": 49
           }
         },
-        "moduleName": "htis/templates/manage/searchs/index.hbs"
+        "moduleName": "htis/templates/manage/releases/index.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -28552,167 +28845,7 @@ define("htis/templates/manage/searchs/index", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/manage/searchs/search/archive", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/searchs/search/archive.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/searchs/search/edit", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/searchs/search/edit.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/searchs/search/newinstance", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/searchs/search/newinstance.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/searchs/search/restore", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/searchs/search/restore.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/searchs/search", ["exports"], function (exports) {
+define("htis/templates/manage/releases/release", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
       return {
@@ -28729,7 +28862,7 @@ define("htis/templates/manage/searchs/search", ["exports"], function (exports) {
               "column": 71
             }
           },
-          "moduleName": "htis/templates/manage/searchs/search.hbs"
+          "moduleName": "htis/templates/manage/releases/release.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -28771,7 +28904,7 @@ define("htis/templates/manage/searchs/search", ["exports"], function (exports) {
                 "column": 163
               }
             },
-            "moduleName": "htis/templates/manage/searchs/search.hbs"
+            "moduleName": "htis/templates/manage/releases/release.hbs"
           },
           arity: 0,
           cachedFragment: null,
@@ -28808,7 +28941,7 @@ define("htis/templates/manage/searchs/search", ["exports"], function (exports) {
               "column": 192
             }
           },
-          "moduleName": "htis/templates/manage/searchs/search.hbs"
+          "moduleName": "htis/templates/manage/releases/release.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -28848,7 +28981,7 @@ define("htis/templates/manage/searchs/search", ["exports"], function (exports) {
             "column": 199
           }
         },
-        "moduleName": "htis/templates/manage/searchs/search.hbs"
+        "moduleName": "htis/templates/manage/releases/release.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -28869,6 +29002,126 @@ define("htis/templates/manage/searchs/search", ["exports"], function (exports) {
       statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 199]]]]],
       locals: [],
       templates: [child0, child1]
+    };
+  })());
+});
+define("htis/templates/manage/releases/release/archive", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/releases/release/archive.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/releases/release/edit", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/releases/release/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/releases/release/newinstance", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/releases/release/newinstance.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
     };
   })());
 });
@@ -29032,6 +29285,564 @@ define("htis/templates/manage/searchs", ["exports"], function (exports) {
     };
   })());
 });
+define("htis/templates/manage/searchs/index", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 42
+            }
+          },
+          "moduleName": "htis/templates/manage/searchs/index.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["content", "default-index", ["loc", [null, [1, 25], [1, 42]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 49
+          }
+        },
+        "moduleName": "htis/templates/manage/searchs/index.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 6], [1, 23]]]]], [], 0, null, ["loc", [null, [1, 0], [1, 49]]]]],
+      locals: [],
+      templates: [child0]
+    };
+  })());
+});
+define("htis/templates/manage/searchs/search", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 71
+            }
+          },
+          "moduleName": "htis/templates/manage/searchs/search.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["manage/navigable-pane-car"], [], ["loc", [null, [1, 22], [1, 61]]]], ["content", "outlet", ["loc", [null, [1, 61], [1, 71]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 79
+              },
+              "end": {
+                "line": 1,
+                "column": 163
+              }
+            },
+            "moduleName": "htis/templates/manage/searchs/search.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["manage/navigable-pane-car"], [], ["loc", [null, [1, 124], [1, 163]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 71
+            },
+            "end": {
+              "line": 1,
+              "column": 192
+            }
+          },
+          "moduleName": "htis/templates/manage/searchs/search.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isRight", true, "isMulti", true], 0, null, ["loc", [null, [1, 79], [1, 182]]]], ["content", "outlet", ["loc", [null, [1, 182], [1, 192]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 199
+          }
+        },
+        "moduleName": "htis/templates/manage/searchs/search.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 199]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
+define("htis/templates/manage/searchs/search/archive", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/searchs/search/archive.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/searchs/search/edit", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/searchs/search/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/searchs/search/newinstance", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/searchs/search/newinstance.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/searchs/search/restore", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/searchs/search/restore.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/unuseds", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 72
+            }
+          },
+          "moduleName": "htis/templates/manage/unuseds.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 22], [1, 62]]]], ["content", "outlet", ["loc", [null, [1, 62], [1, 72]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 80
+              },
+              "end": {
+                "line": 1,
+                "column": 153
+              }
+            },
+            "moduleName": "htis/templates/manage/unuseds.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 113], [1, 153]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 72
+            },
+            "end": {
+              "line": 1,
+              "column": 182
+            }
+          },
+          "moduleName": "htis/templates/manage/unuseds.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isCenter", true], 0, null, ["loc", [null, [1, 80], [1, 172]]]], ["content", "outlet", ["loc", [null, [1, 172], [1, 182]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 189
+          }
+        },
+        "moduleName": "htis/templates/manage/unuseds.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 189]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
 define("htis/templates/manage/unuseds/index", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -29127,126 +29938,6 @@ define("htis/templates/manage/unuseds/new", ["exports"], function (exports) {
           }
         },
         "moduleName": "htis/templates/manage/unuseds/new.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/unuseds/unused/archive", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/unuseds/unused/archive.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/unuseds/unused/edit", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/unuseds/unused/edit.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/manage/unuseds/unused/newinstance", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/manage/unuseds/unused/newinstance.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -29430,128 +30121,8 @@ define("htis/templates/manage/unuseds/unused", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/manage/unuseds", ["exports"], function (exports) {
+define("htis/templates/manage/unuseds/unused/archive", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 72
-            }
-          },
-          "moduleName": "htis/templates/manage/unuseds.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 22], [1, 62]]]], ["content", "outlet", ["loc", [null, [1, 62], [1, 72]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 80
-              },
-              "end": {
-                "line": 1,
-                "column": 153
-              }
-            },
-            "moduleName": "htis/templates/manage/unuseds.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(1);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["manage/navigable-pane-cars"], [], ["loc", [null, [1, 113], [1, 153]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 72
-            },
-            "end": {
-              "line": 1,
-              "column": 182
-            }
-          },
-          "moduleName": "htis/templates/manage/unuseds.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isCenter", true], 0, null, ["loc", [null, [1, 80], [1, 172]]]], ["content", "outlet", ["loc", [null, [1, 172], [1, 182]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
     return {
       meta: {
         "revision": "Ember@1.13.11",
@@ -29563,10 +30134,10 @@ define("htis/templates/manage/unuseds", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 189
+            "column": 10
           }
         },
-        "moduleName": "htis/templates/manage/unuseds.hbs"
+        "moduleName": "htis/templates/manage/unuseds/unused/archive.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -29584,606 +30155,14 @@ define("htis/templates/manage/unuseds", ["exports"], function (exports) {
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 189]]]]],
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
       locals: [],
-      templates: [child0, child1]
+      templates: []
     };
   })());
 });
-define("htis/templates/manage", ["exports"], function (exports) {
+define("htis/templates/manage/unuseds/unused/edit", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      var child0 = (function () {
-        var child0 = (function () {
-          var child0 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1028
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1106
-                  }
-                },
-                "moduleName": "htis/templates/manage.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child1 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1281
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1360
-                  }
-                },
-                "moduleName": "htis/templates/manage.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child2 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1541
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1619
-                  }
-                },
-                "moduleName": "htis/templates/manage.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child3 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1795
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1874
-                  }
-                },
-                "moduleName": "htis/templates/manage.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child4 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 2055
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 2134
-                  }
-                },
-                "moduleName": "htis/templates/manage.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child5 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 2310
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 2389
-                  }
-                },
-                "moduleName": "htis/templates/manage.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 206
-                },
-                "end": {
-                  "line": 1,
-                  "column": 2418
-                }
-              },
-              "moduleName": "htis/templates/manage.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("div");
-              dom.setAttribute(el1, "class", "panel");
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "panel-heading text-center");
-              var el3 = dom.createElement("h3");
-              dom.setAttribute(el3, "class", "panel-title");
-              var el4 = dom.createElement("a");
-              dom.setAttribute(el4, "title", "返回");
-              dom.setAttribute(el4, "href", "javascript:void(0)");
-              dom.setAttribute(el4, "class", "btn-home pull-left");
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-home");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("label");
-              dom.setAttribute(el5, "class", "sr-only");
-              var el6 = dom.createTextNode("返回");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              dom.setAttribute(el4, "title", "通知中心");
-              dom.setAttribute(el4, "href", "javascript:void(0)");
-              dom.setAttribute(el4, "class", "btn-bell pull-right");
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "bell-count");
-              var el6 = dom.createComment("");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-bell");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("label");
-              dom.setAttribute(el5, "class", "sr-only");
-              var el6 = dom.createTextNode("通知中心");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createComment("");
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "panel-scroll");
-              var el3 = dom.createElement("div");
-              dom.setAttribute(el3, "class", "list-group list-full");
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("搜索");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-search pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("待审核");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-time pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("待处理");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-warning-sign pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("可加油");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-inbox pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("已暂停");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-ban-circle pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("已闲置");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-cloud pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element0 = dom.childAt(fragment, [0]);
-              var element1 = dom.childAt(element0, [0, 0]);
-              var element2 = dom.childAt(element1, [0]);
-              var element3 = dom.childAt(element1, [1]);
-              var element4 = dom.childAt(element0, [1, 0]);
-              var element5 = dom.childAt(element4, [0]);
-              var element6 = dom.childAt(element4, [1]);
-              var element7 = dom.childAt(element4, [2]);
-              var element8 = dom.childAt(element4, [3]);
-              var element9 = dom.childAt(element4, [4]);
-              var element10 = dom.childAt(element4, [5]);
-              var morphs = new Array(22);
-              morphs[0] = dom.createElementMorph(element2);
-              morphs[1] = dom.createElementMorph(element3);
-              morphs[2] = dom.createMorphAt(dom.childAt(element3, [0]), 0, 0);
-              morphs[3] = dom.createMorphAt(element1, 2, 2);
-              morphs[4] = dom.createAttrMorph(element5, 'class');
-              morphs[5] = dom.createElementMorph(element5);
-              morphs[6] = dom.createMorphAt(element5, 2, 2);
-              morphs[7] = dom.createAttrMorph(element6, 'class');
-              morphs[8] = dom.createElementMorph(element6);
-              morphs[9] = dom.createMorphAt(element6, 2, 2);
-              morphs[10] = dom.createAttrMorph(element7, 'class');
-              morphs[11] = dom.createElementMorph(element7);
-              morphs[12] = dom.createMorphAt(element7, 2, 2);
-              morphs[13] = dom.createAttrMorph(element8, 'class');
-              morphs[14] = dom.createElementMorph(element8);
-              morphs[15] = dom.createMorphAt(element8, 2, 2);
-              morphs[16] = dom.createAttrMorph(element9, 'class');
-              morphs[17] = dom.createElementMorph(element9);
-              morphs[18] = dom.createMorphAt(element9, 2, 2);
-              morphs[19] = dom.createAttrMorph(element10, 'class');
-              morphs[20] = dom.createElementMorph(element10);
-              morphs[21] = dom.createMorphAt(element10, 2, 2);
-              return morphs;
-            },
-            statements: [["element", "action", ["goHome"], [], ["loc", [null, [1, 376], [1, 395]]]], ["element", "action", ["goBell"], [], ["loc", [null, [1, 544], [1, 563]]]], ["content", "messagesController.model.length", ["loc", [null, [1, 655], [1, 690]]]], ["content", "pannelTitle", ["loc", [null, [1, 779], [1, 794]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isSearchs", ["loc", [null, [1, 919], [1, 928]]]], "active"], [], ["loc", [null, [1, 914], [1, 939]]]]]]], ["element", "action", ["goSearchs"], [], ["loc", [null, [1, 868], [1, 890]]]], ["block", "if", [["get", "isSearchs", ["loc", [null, [1, 1034], [1, 1043]]]]], [], 0, null, ["loc", [null, [1, 1028], [1, 1113]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isPendings", ["loc", [null, [1, 1172], [1, 1182]]]], "active"], [], ["loc", [null, [1, 1167], [1, 1193]]]]]]], ["element", "action", ["goPendings"], [], ["loc", [null, [1, 1120], [1, 1143]]]], ["block", "if", [["get", "isPendings", ["loc", [null, [1, 1287], [1, 1297]]]]], [], 1, null, ["loc", [null, [1, 1281], [1, 1367]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isUnuseds", ["loc", [null, [1, 1425], [1, 1434]]]], "active"], [], ["loc", [null, [1, 1420], [1, 1445]]]]]]], ["element", "action", ["goUnuseds"], [], ["loc", [null, [1, 1374], [1, 1396]]]], ["block", "if", [["get", "isUnuseds", ["loc", [null, [1, 1547], [1, 1556]]]]], [], 2, null, ["loc", [null, [1, 1541], [1, 1626]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isReleases", ["loc", [null, [1, 1685], [1, 1695]]]], "active"], [], ["loc", [null, [1, 1680], [1, 1706]]]]]]], ["element", "action", ["goReleases"], [], ["loc", [null, [1, 1633], [1, 1656]]]], ["block", "if", [["get", "isReleases", ["loc", [null, [1, 1801], [1, 1811]]]]], [], 3, null, ["loc", [null, [1, 1795], [1, 1881]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isDisables", ["loc", [null, [1, 1940], [1, 1950]]]], "active"], [], ["loc", [null, [1, 1935], [1, 1961]]]]]]], ["element", "action", ["goDisables"], [], ["loc", [null, [1, 1888], [1, 1911]]]], ["block", "if", [["get", "isDisables", ["loc", [null, [1, 2061], [1, 2071]]]]], [], 4, null, ["loc", [null, [1, 2055], [1, 2141]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isArchives", ["loc", [null, [1, 2200], [1, 2210]]]], "active"], [], ["loc", [null, [1, 2195], [1, 2221]]]]]]], ["element", "action", ["goArchives"], [], ["loc", [null, [1, 2148], [1, 2171]]]], ["block", "if", [["get", "isArchives", ["loc", [null, [1, 2316], [1, 2326]]]]], [], 5, null, ["loc", [null, [1, 2310], [1, 2396]]]]],
-            locals: [],
-            templates: [child0, child1, child2, child3, child4, child5]
-          };
-        })();
-        var child1 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 2437
-                },
-                "end": {
-                  "line": 1,
-                  "column": 2469
-                }
-              },
-              "moduleName": "htis/templates/manage.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createComment("");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-              dom.insertBoundary(fragment, 0);
-              dom.insertBoundary(fragment, null);
-              return morphs;
-            },
-            statements: [["content", "outlet", ["loc", [null, [1, 2459], [1, 2469]]]]],
-            locals: [],
-            templates: []
-          };
-        })();
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 162
-              },
-              "end": {
-                "line": 1,
-                "column": 2476
-              }
-            },
-            "moduleName": "htis/templates/manage.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 234], [1, 243]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 253], [1, 261]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 269], [1, 275]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 283], [1, 289]]]]], [], []]], 0, null, ["loc", [null, [1, 206], [1, 2437]]]], ["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 2443], [1, 2457]]]]], [], 1, null, ["loc", [null, [1, 2437], [1, 2476]]]]],
-          locals: [],
-          templates: [child0, child1]
-        };
-      })();
-      var child1 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 2495
-              },
-              "end": {
-                "line": 1,
-                "column": 2530
-              }
-            },
-            "moduleName": "htis/templates/manage.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(1);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["content", "outlet", ["loc", [null, [1, 2520], [1, 2530]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 145
-            },
-            "end": {
-              "line": 1,
-              "column": 2537
-            }
-          },
-          "moduleName": "htis/templates/manage.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isLeft", ["subexpr", "@mut", [["get", "equipment.isNotXs", ["loc", [null, [1, 187], [1, 204]]]]], [], []]], 0, null, ["loc", [null, [1, 162], [1, 2495]]]], ["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 2501], [1, 2518]]]]], [], 1, null, ["loc", [null, [1, 2495], [1, 2537]]]]],
-        locals: [],
-        templates: [child0, child1]
-      };
-    })();
-    var child1 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 2537
-            },
-            "end": {
-              "line": 1,
-              "column": 2577
-            }
-          },
-          "moduleName": "htis/templates/manage.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "none-powered", [], ["action", "goHome"], ["loc", [null, [1, 2545], [1, 2577]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
     return {
       meta: {
         "revision": "Ember@1.13.11",
@@ -30195,10 +30174,10 @@ define("htis/templates/manage", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 2590
+            "column": 10
           }
         },
-        "moduleName": "htis/templates/manage.hbs"
+        "moduleName": "htis/templates/manage/unuseds/unused/edit.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -30207,25 +30186,58 @@ define("htis/templates/manage", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "id", "manage");
-        var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/manage/unuseds/unused/newinstance", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/manage/unuseds/unused/newinstance.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element11 = dom.childAt(fragment, [1]);
-        var morphs = new Array(3);
+        var morphs = new Array(1);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        morphs[1] = dom.createAttrMorph(element11, 'class');
-        morphs[2] = dom.createMorphAt(element11, 0, 0);
         dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 95], [1, 129]]]], "is-folded"], [], ["loc", [null, [1, 90], [1, 143]]]]]]], ["block", "if", [["get", "isPowered", ["loc", [null, [1, 151], [1, 160]]]]], [], 0, 1, ["loc", [null, [1, 145], [1, 2584]]]]],
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
       locals: [],
-      templates: [child0, child1]
+      templates: []
     };
   })());
 });
@@ -30586,6 +30598,640 @@ define("htis/templates/online", ["exports"], function (exports) {
       statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 95], [1, 129]]]], "is-folded"], [], ["loc", [null, [1, 90], [1, 143]]]]]]], ["block", "container-wrap", [], ["isFull", true], 0, null, ["loc", [null, [1, 145], [1, 515]]]]],
       locals: [],
       templates: [child0]
+    };
+  })());
+});
+define("htis/templates/scanning", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      var child0 = (function () {
+        var child0 = (function () {
+          var child0 = (function () {
+            var child0 = (function () {
+              var child0 = (function () {
+                return {
+                  meta: {
+                    "revision": "Ember@1.13.11",
+                    "loc": {
+                      "source": null,
+                      "start": {
+                        "line": 1,
+                        "column": 368
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 716
+                      }
+                    },
+                    "moduleName": "htis/templates/scanning.hbs"
+                  },
+                  arity: 1,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  buildFragment: function buildFragment(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createElement("a");
+                    dom.setAttribute(el1, "class", "list-group-item");
+                    var el2 = dom.createComment("");
+                    dom.appendChild(el1, el2);
+                    var el2 = dom.createElement("span");
+                    dom.setAttribute(el2, "class", "sub-title");
+                    var el3 = dom.createTextNode("[");
+                    dom.appendChild(el2, el3);
+                    var el3 = dom.createComment("");
+                    dom.appendChild(el2, el3);
+                    var el3 = dom.createTextNode("]");
+                    dom.appendChild(el2, el3);
+                    dom.appendChild(el1, el2);
+                    var el2 = dom.createElement("div");
+                    dom.setAttribute(el2, "class", "glyphicon glyphicon-chevron-right pull-right");
+                    dom.appendChild(el1, el2);
+                    var el2 = dom.createElement("span");
+                    dom.setAttribute(el2, "class", "pull-right left-icon text-warning");
+                    var el3 = dom.createComment("");
+                    dom.appendChild(el2, el3);
+                    dom.appendChild(el1, el2);
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                    var element3 = dom.childAt(fragment, [0]);
+                    var morphs = new Array(4);
+                    morphs[0] = dom.createElementMorph(element3);
+                    morphs[1] = dom.createMorphAt(element3, 0, 0);
+                    morphs[2] = dom.createMorphAt(dom.childAt(element3, [1]), 1, 1);
+                    morphs[3] = dom.createMorphAt(dom.childAt(element3, [3]), 0, 0);
+                    return morphs;
+                  },
+                  statements: [["element", "action", ["selInstance", ["get", "instance", ["loc", [null, [1, 427], [1, 435]]]]], [], ["loc", [null, [1, 404], [1, 437]]]], ["content", "instance.project.name", ["loc", [null, [1, 462], [1, 487]]]], ["content", "instance.department.name", ["loc", [null, [1, 512], [1, 540]]]], ["inline", "checkbox-list-value", [], ["content", ["subexpr", "@mut", [["get", "instance.oils", ["loc", [null, [1, 690], [1, 703]]]]], [], []]], ["loc", [null, [1, 660], [1, 705]]]]],
+                  locals: ["instance"],
+                  templates: []
+                };
+              })();
+              return {
+                meta: {
+                  "revision": "Ember@1.13.11",
+                  "loc": {
+                    "source": null,
+                    "start": {
+                      "line": 1,
+                      "column": 261
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 849
+                    }
+                  },
+                  "moduleName": "htis/templates/scanning.hbs"
+                },
+                arity: 0,
+                cachedFragment: null,
+                hasRendered: false,
+                buildFragment: function buildFragment(dom) {
+                  var el0 = dom.createDocumentFragment();
+                  var el1 = dom.createElement("div");
+                  dom.setAttribute(el1, "class", "fix-icon");
+                  var el2 = dom.createElement("div");
+                  dom.setAttribute(el2, "class", "fix-title");
+                  var el3 = dom.createTextNode("检测到多个申请单允许加油");
+                  dom.appendChild(el2, el3);
+                  dom.appendChild(el1, el2);
+                  var el2 = dom.createElement("div");
+                  dom.setAttribute(el2, "class", "list-group");
+                  var el3 = dom.createComment("");
+                  dom.appendChild(el2, el3);
+                  dom.appendChild(el1, el2);
+                  var el2 = dom.createElement("div");
+                  dom.setAttribute(el2, "class", "list-btns");
+                  var el3 = dom.createElement("button");
+                  dom.setAttribute(el3, "class", "btn btn-default btn-block");
+                  var el4 = dom.createTextNode("取消");
+                  dom.appendChild(el3, el4);
+                  dom.appendChild(el2, el3);
+                  dom.appendChild(el1, el2);
+                  dom.appendChild(el0, el1);
+                  return el0;
+                },
+                buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                  var element4 = dom.childAt(fragment, [0]);
+                  var element5 = dom.childAt(element4, [2, 0]);
+                  var morphs = new Array(2);
+                  morphs[0] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
+                  morphs[1] = dom.createElementMorph(element5);
+                  return morphs;
+                },
+                statements: [["block", "each", [["get", "instances", ["loc", [null, [1, 376], [1, 385]]]]], [], 0, null, ["loc", [null, [1, 368], [1, 725]]]], ["element", "action", ["cancelConfirming"], [], ["loc", [null, [1, 762], [1, 791]]]]],
+                locals: [],
+                templates: [child0]
+              };
+            })();
+            var child1 = (function () {
+              var child0 = (function () {
+                return {
+                  meta: {
+                    "revision": "Ember@1.13.11",
+                    "loc": {
+                      "source": null,
+                      "start": {
+                        "line": 1,
+                        "column": 879
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 958
+                      }
+                    },
+                    "moduleName": "htis/templates/scanning.hbs"
+                  },
+                  arity: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  buildFragment: function buildFragment(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createElement("div");
+                    dom.setAttribute(el1, "class", "glyphicon glyphicon-transfer text-warning");
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  buildRenderNodes: function buildRenderNodes() {
+                    return [];
+                  },
+                  statements: [],
+                  locals: [],
+                  templates: []
+                };
+              })();
+              var child1 = (function () {
+                return {
+                  meta: {
+                    "revision": "Ember@1.13.11",
+                    "loc": {
+                      "source": null,
+                      "start": {
+                        "line": 1,
+                        "column": 958
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 1026
+                      }
+                    },
+                    "moduleName": "htis/templates/scanning.hbs"
+                  },
+                  arity: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  buildFragment: function buildFragment(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createElement("div");
+                    dom.setAttribute(el1, "class", "glyphicon glyphicon-barcode text-warning");
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  buildRenderNodes: function buildRenderNodes() {
+                    return [];
+                  },
+                  statements: [],
+                  locals: [],
+                  templates: []
+                };
+              })();
+              var child2 = (function () {
+                var child0 = (function () {
+                  return {
+                    meta: {
+                      "revision": "Ember@1.13.11",
+                      "loc": {
+                        "source": null,
+                        "start": {
+                          "line": 1,
+                          "column": 1116
+                        },
+                        "end": {
+                          "line": 1,
+                          "column": 1173
+                        }
+                      },
+                      "moduleName": "htis/templates/scanning.hbs"
+                    },
+                    arity: 1,
+                    cachedFragment: null,
+                    hasRendered: false,
+                    buildFragment: function buildFragment(dom) {
+                      var el0 = dom.createDocumentFragment();
+                      var el1 = dom.createComment("");
+                      dom.appendChild(el0, el1);
+                      return el0;
+                    },
+                    buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                      var morphs = new Array(1);
+                      morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+                      dom.insertBoundary(fragment, 0);
+                      dom.insertBoundary(fragment, null);
+                      return morphs;
+                    },
+                    statements: [["content", "error.message", ["loc", [null, [1, 1156], [1, 1173]]]]],
+                    locals: ["error"],
+                    templates: []
+                  };
+                })();
+                return {
+                  meta: {
+                    "revision": "Ember@1.13.11",
+                    "loc": {
+                      "source": null,
+                      "start": {
+                        "line": 1,
+                        "column": 1057
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 1188
+                      }
+                    },
+                    "moduleName": "htis/templates/scanning.hbs"
+                  },
+                  arity: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  buildFragment: function buildFragment(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createElement("div");
+                    dom.setAttribute(el1, "class", "text-danger");
+                    var el2 = dom.createComment("");
+                    dom.appendChild(el1, el2);
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                    var morphs = new Array(1);
+                    morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+                    return morphs;
+                  },
+                  statements: [["block", "each", [["get", "errors.check_errors", ["loc", [null, [1, 1124], [1, 1143]]]]], [], 0, null, ["loc", [null, [1, 1116], [1, 1182]]]]],
+                  locals: [],
+                  templates: [child0]
+                };
+              })();
+              var child3 = (function () {
+                return {
+                  meta: {
+                    "revision": "Ember@1.13.11",
+                    "loc": {
+                      "source": null,
+                      "start": {
+                        "line": 1,
+                        "column": 1188
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 1231
+                      }
+                    },
+                    "moduleName": "htis/templates/scanning.hbs"
+                  },
+                  arity: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  buildFragment: function buildFragment(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createElement("span");
+                    var el2 = dom.createTextNode("请将光标置于方框内同时按住扫码键对准车辆条码");
+                    dom.appendChild(el1, el2);
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  buildRenderNodes: function buildRenderNodes() {
+                    return [];
+                  },
+                  statements: [],
+                  locals: [],
+                  templates: []
+                };
+              })();
+              var child4 = (function () {
+                return {
+                  meta: {
+                    "revision": "Ember@1.13.11",
+                    "loc": {
+                      "source": null,
+                      "start": {
+                        "line": 1,
+                        "column": 1434
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 1626
+                      }
+                    },
+                    "moduleName": "htis/templates/scanning.hbs"
+                  },
+                  arity: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  buildFragment: function buildFragment(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createComment("");
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                    var morphs = new Array(1);
+                    morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+                    dom.insertBoundary(fragment, 0);
+                    dom.insertBoundary(fragment, null);
+                    return morphs;
+                  },
+                  statements: [["inline", "spin-button", [], ["action", "clearError", "loadedIcon", "glyphicon-remove", "isIcon", true, "isLoading", false, "disabled", false, "title", "清除", "class", "input-group-addin addin-large pull-right is-blank"], ["loc", [null, [1, 1449], [1, 1626]]]]],
+                  locals: [],
+                  templates: []
+                };
+              })();
+              return {
+                meta: {
+                  "revision": "Ember@1.13.11",
+                  "loc": {
+                    "source": null,
+                    "start": {
+                      "line": 1,
+                      "column": 849
+                    },
+                    "end": {
+                      "line": 1,
+                      "column": 1657
+                    }
+                  },
+                  "moduleName": "htis/templates/scanning.hbs"
+                },
+                arity: 0,
+                cachedFragment: null,
+                hasRendered: false,
+                buildFragment: function buildFragment(dom) {
+                  var el0 = dom.createDocumentFragment();
+                  var el1 = dom.createElement("div");
+                  dom.setAttribute(el1, "class", "fix-icon");
+                  var el2 = dom.createComment("");
+                  dom.appendChild(el1, el2);
+                  var el2 = dom.createElement("div");
+                  dom.setAttribute(el2, "class", "icon-title");
+                  var el3 = dom.createComment("");
+                  dom.appendChild(el2, el3);
+                  var el3 = dom.createElement("div");
+                  dom.setAttribute(el3, "class", "input-border-box");
+                  var el4 = dom.createElement("div");
+                  dom.setAttribute(el4, "class", "input-group");
+                  var el5 = dom.createComment("");
+                  dom.appendChild(el4, el5);
+                  var el5 = dom.createComment("");
+                  dom.appendChild(el4, el5);
+                  dom.appendChild(el3, el4);
+                  dom.appendChild(el2, el3);
+                  dom.appendChild(el1, el2);
+                  dom.appendChild(el0, el1);
+                  return el0;
+                },
+                buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                  var element0 = dom.childAt(fragment, [0]);
+                  var element1 = dom.childAt(element0, [1]);
+                  var element2 = dom.childAt(element1, [1, 0]);
+                  var morphs = new Array(4);
+                  morphs[0] = dom.createMorphAt(element0, 0, 0);
+                  morphs[1] = dom.createMorphAt(element1, 0, 0);
+                  morphs[2] = dom.createMorphAt(element2, 0, 0);
+                  morphs[3] = dom.createMorphAt(element2, 1, 1);
+                  return morphs;
+                },
+                statements: [["block", "if", [["get", "isChecking", ["loc", [null, [1, 885], [1, 895]]]]], [], 0, 1, ["loc", [null, [1, 879], [1, 1033]]]], ["block", "if", [["get", "errors.check_errors.length", ["loc", [null, [1, 1063], [1, 1089]]]]], [], 2, 3, ["loc", [null, [1, 1057], [1, 1238]]]], ["inline", "input", [], ["type", "text", "enter", "tryGoNext", "autofocus", "autofocus", "value", ["subexpr", "@mut", [["get", "vinCode", ["loc", [null, [1, 1359], [1, 1366]]]]], [], []], "placeholder", "将光标置于此方框内按住扫码键对准车辆条码", "class", "form-control input-vin"], ["loc", [null, [1, 1293], [1, 1434]]]], ["block", "if", [["get", "vinCode", ["loc", [null, [1, 1440], [1, 1447]]]]], [], 4, null, ["loc", [null, [1, 1434], [1, 1633]]]]],
+                locals: [],
+                templates: [child0, child1, child2, child3, child4]
+              };
+            })();
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 198
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1664
+                  }
+                },
+                "moduleName": "htis/templates/scanning.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createComment("");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+                var morphs = new Array(1);
+                morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+                dom.insertBoundary(fragment, 0);
+                dom.insertBoundary(fragment, null);
+                return morphs;
+              },
+              statements: [["block", "if", [["get", "isConfirming", ["loc", [null, [1, 267], [1, 279]]]]], [], 0, 1, ["loc", [null, [1, 261], [1, 1664]]]]],
+              locals: [],
+              templates: [child0, child1]
+            };
+          })();
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 113
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1681
+                }
+              },
+              "moduleName": "htis/templates/scanning.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+              dom.insertBoundary(fragment, 0);
+              dom.insertBoundary(fragment, null);
+              return morphs;
+            },
+            statements: [["block", "detail-panel", [], ["pannelTitle", ["subexpr", "@mut", [["get", "pannelTitle", ["loc", [null, [1, 226], [1, 237]]]]], [], []], "class", "panel-primary"], 0, null, ["loc", [null, [1, 198], [1, 1681]]]]],
+            locals: [],
+            templates: [child0]
+          };
+        })();
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 82
+              },
+              "end": {
+                "line": 1,
+                "column": 1710
+              }
+            },
+            "moduleName": "htis/templates/scanning.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 141], [1, 150]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 160], [1, 168]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 176], [1, 182]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 190], [1, 196]]]]], [], []]], 0, null, ["loc", [null, [1, 113], [1, 1700]]]], ["content", "outlet", ["loc", [null, [1, 1700], [1, 1710]]]]],
+          locals: [],
+          templates: [child0]
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 65
+            },
+            "end": {
+              "line": 1,
+              "column": 1729
+            }
+          },
+          "moduleName": "htis/templates/scanning.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isFull", true], 0, null, ["loc", [null, [1, 82], [1, 1729]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    var child1 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 1729
+            },
+            "end": {
+              "line": 1,
+              "column": 1769
+            }
+          },
+          "moduleName": "htis/templates/scanning.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "none-powered", [], ["action", "goBack"], ["loc", [null, [1, 1737], [1, 1769]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 1782
+          }
+        },
+        "moduleName": "htis/templates/scanning.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.setAttribute(el1, "id", "scanning");
+        dom.setAttribute(el1, "class", "container-main opacity09 trans-all-05");
+        var el2 = dom.createComment("");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "isPowered", ["loc", [null, [1, 71], [1, 80]]]]], [], 0, 1, ["loc", [null, [1, 65], [1, 1776]]]]],
+      locals: [],
+      templates: [child0, child1]
     };
   })());
 });
@@ -32245,411 +32891,12 @@ define("htis/templates/scanning/filling", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/scanning", ["exports"], function (exports) {
+define("htis/templates/setting", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
       var child0 = (function () {
         var child0 = (function () {
           var child0 = (function () {
-            var child0 = (function () {
-              var child0 = (function () {
-                return {
-                  meta: {
-                    "revision": "Ember@1.13.11",
-                    "loc": {
-                      "source": null,
-                      "start": {
-                        "line": 1,
-                        "column": 368
-                      },
-                      "end": {
-                        "line": 1,
-                        "column": 716
-                      }
-                    },
-                    "moduleName": "htis/templates/scanning.hbs"
-                  },
-                  arity: 1,
-                  cachedFragment: null,
-                  hasRendered: false,
-                  buildFragment: function buildFragment(dom) {
-                    var el0 = dom.createDocumentFragment();
-                    var el1 = dom.createElement("a");
-                    dom.setAttribute(el1, "class", "list-group-item");
-                    var el2 = dom.createComment("");
-                    dom.appendChild(el1, el2);
-                    var el2 = dom.createElement("span");
-                    dom.setAttribute(el2, "class", "sub-title");
-                    var el3 = dom.createTextNode("[");
-                    dom.appendChild(el2, el3);
-                    var el3 = dom.createComment("");
-                    dom.appendChild(el2, el3);
-                    var el3 = dom.createTextNode("]");
-                    dom.appendChild(el2, el3);
-                    dom.appendChild(el1, el2);
-                    var el2 = dom.createElement("div");
-                    dom.setAttribute(el2, "class", "glyphicon glyphicon-chevron-right pull-right");
-                    dom.appendChild(el1, el2);
-                    var el2 = dom.createElement("span");
-                    dom.setAttribute(el2, "class", "pull-right left-icon text-warning");
-                    var el3 = dom.createComment("");
-                    dom.appendChild(el2, el3);
-                    dom.appendChild(el1, el2);
-                    dom.appendChild(el0, el1);
-                    return el0;
-                  },
-                  buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                    var element3 = dom.childAt(fragment, [0]);
-                    var morphs = new Array(4);
-                    morphs[0] = dom.createElementMorph(element3);
-                    morphs[1] = dom.createMorphAt(element3, 0, 0);
-                    morphs[2] = dom.createMorphAt(dom.childAt(element3, [1]), 1, 1);
-                    morphs[3] = dom.createMorphAt(dom.childAt(element3, [3]), 0, 0);
-                    return morphs;
-                  },
-                  statements: [["element", "action", ["selInstance", ["get", "instance", ["loc", [null, [1, 427], [1, 435]]]]], [], ["loc", [null, [1, 404], [1, 437]]]], ["content", "instance.project.name", ["loc", [null, [1, 462], [1, 487]]]], ["content", "instance.department.name", ["loc", [null, [1, 512], [1, 540]]]], ["inline", "checkbox-list-value", [], ["content", ["subexpr", "@mut", [["get", "instance.oils", ["loc", [null, [1, 690], [1, 703]]]]], [], []]], ["loc", [null, [1, 660], [1, 705]]]]],
-                  locals: ["instance"],
-                  templates: []
-                };
-              })();
-              return {
-                meta: {
-                  "revision": "Ember@1.13.11",
-                  "loc": {
-                    "source": null,
-                    "start": {
-                      "line": 1,
-                      "column": 261
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 849
-                    }
-                  },
-                  "moduleName": "htis/templates/scanning.hbs"
-                },
-                arity: 0,
-                cachedFragment: null,
-                hasRendered: false,
-                buildFragment: function buildFragment(dom) {
-                  var el0 = dom.createDocumentFragment();
-                  var el1 = dom.createElement("div");
-                  dom.setAttribute(el1, "class", "fix-icon");
-                  var el2 = dom.createElement("div");
-                  dom.setAttribute(el2, "class", "fix-title");
-                  var el3 = dom.createTextNode("检测到多个申请单允许加油");
-                  dom.appendChild(el2, el3);
-                  dom.appendChild(el1, el2);
-                  var el2 = dom.createElement("div");
-                  dom.setAttribute(el2, "class", "list-group");
-                  var el3 = dom.createComment("");
-                  dom.appendChild(el2, el3);
-                  dom.appendChild(el1, el2);
-                  var el2 = dom.createElement("div");
-                  dom.setAttribute(el2, "class", "list-btns");
-                  var el3 = dom.createElement("button");
-                  dom.setAttribute(el3, "class", "btn btn-default btn-block");
-                  var el4 = dom.createTextNode("取消");
-                  dom.appendChild(el3, el4);
-                  dom.appendChild(el2, el3);
-                  dom.appendChild(el1, el2);
-                  dom.appendChild(el0, el1);
-                  return el0;
-                },
-                buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                  var element4 = dom.childAt(fragment, [0]);
-                  var element5 = dom.childAt(element4, [2, 0]);
-                  var morphs = new Array(2);
-                  morphs[0] = dom.createMorphAt(dom.childAt(element4, [1]), 0, 0);
-                  morphs[1] = dom.createElementMorph(element5);
-                  return morphs;
-                },
-                statements: [["block", "each", [["get", "instances", ["loc", [null, [1, 376], [1, 385]]]]], [], 0, null, ["loc", [null, [1, 368], [1, 725]]]], ["element", "action", ["cancelConfirming"], [], ["loc", [null, [1, 762], [1, 791]]]]],
-                locals: [],
-                templates: [child0]
-              };
-            })();
-            var child1 = (function () {
-              var child0 = (function () {
-                return {
-                  meta: {
-                    "revision": "Ember@1.13.11",
-                    "loc": {
-                      "source": null,
-                      "start": {
-                        "line": 1,
-                        "column": 879
-                      },
-                      "end": {
-                        "line": 1,
-                        "column": 958
-                      }
-                    },
-                    "moduleName": "htis/templates/scanning.hbs"
-                  },
-                  arity: 0,
-                  cachedFragment: null,
-                  hasRendered: false,
-                  buildFragment: function buildFragment(dom) {
-                    var el0 = dom.createDocumentFragment();
-                    var el1 = dom.createElement("div");
-                    dom.setAttribute(el1, "class", "glyphicon glyphicon-transfer text-warning");
-                    dom.appendChild(el0, el1);
-                    return el0;
-                  },
-                  buildRenderNodes: function buildRenderNodes() {
-                    return [];
-                  },
-                  statements: [],
-                  locals: [],
-                  templates: []
-                };
-              })();
-              var child1 = (function () {
-                return {
-                  meta: {
-                    "revision": "Ember@1.13.11",
-                    "loc": {
-                      "source": null,
-                      "start": {
-                        "line": 1,
-                        "column": 958
-                      },
-                      "end": {
-                        "line": 1,
-                        "column": 1026
-                      }
-                    },
-                    "moduleName": "htis/templates/scanning.hbs"
-                  },
-                  arity: 0,
-                  cachedFragment: null,
-                  hasRendered: false,
-                  buildFragment: function buildFragment(dom) {
-                    var el0 = dom.createDocumentFragment();
-                    var el1 = dom.createElement("div");
-                    dom.setAttribute(el1, "class", "glyphicon glyphicon-barcode text-warning");
-                    dom.appendChild(el0, el1);
-                    return el0;
-                  },
-                  buildRenderNodes: function buildRenderNodes() {
-                    return [];
-                  },
-                  statements: [],
-                  locals: [],
-                  templates: []
-                };
-              })();
-              var child2 = (function () {
-                var child0 = (function () {
-                  return {
-                    meta: {
-                      "revision": "Ember@1.13.11",
-                      "loc": {
-                        "source": null,
-                        "start": {
-                          "line": 1,
-                          "column": 1116
-                        },
-                        "end": {
-                          "line": 1,
-                          "column": 1173
-                        }
-                      },
-                      "moduleName": "htis/templates/scanning.hbs"
-                    },
-                    arity: 1,
-                    cachedFragment: null,
-                    hasRendered: false,
-                    buildFragment: function buildFragment(dom) {
-                      var el0 = dom.createDocumentFragment();
-                      var el1 = dom.createComment("");
-                      dom.appendChild(el0, el1);
-                      return el0;
-                    },
-                    buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                      var morphs = new Array(1);
-                      morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-                      dom.insertBoundary(fragment, 0);
-                      dom.insertBoundary(fragment, null);
-                      return morphs;
-                    },
-                    statements: [["content", "error.message", ["loc", [null, [1, 1156], [1, 1173]]]]],
-                    locals: ["error"],
-                    templates: []
-                  };
-                })();
-                return {
-                  meta: {
-                    "revision": "Ember@1.13.11",
-                    "loc": {
-                      "source": null,
-                      "start": {
-                        "line": 1,
-                        "column": 1057
-                      },
-                      "end": {
-                        "line": 1,
-                        "column": 1188
-                      }
-                    },
-                    "moduleName": "htis/templates/scanning.hbs"
-                  },
-                  arity: 0,
-                  cachedFragment: null,
-                  hasRendered: false,
-                  buildFragment: function buildFragment(dom) {
-                    var el0 = dom.createDocumentFragment();
-                    var el1 = dom.createElement("div");
-                    dom.setAttribute(el1, "class", "text-danger");
-                    var el2 = dom.createComment("");
-                    dom.appendChild(el1, el2);
-                    dom.appendChild(el0, el1);
-                    return el0;
-                  },
-                  buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                    var morphs = new Array(1);
-                    morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
-                    return morphs;
-                  },
-                  statements: [["block", "each", [["get", "errors.check_errors", ["loc", [null, [1, 1124], [1, 1143]]]]], [], 0, null, ["loc", [null, [1, 1116], [1, 1182]]]]],
-                  locals: [],
-                  templates: [child0]
-                };
-              })();
-              var child3 = (function () {
-                return {
-                  meta: {
-                    "revision": "Ember@1.13.11",
-                    "loc": {
-                      "source": null,
-                      "start": {
-                        "line": 1,
-                        "column": 1188
-                      },
-                      "end": {
-                        "line": 1,
-                        "column": 1231
-                      }
-                    },
-                    "moduleName": "htis/templates/scanning.hbs"
-                  },
-                  arity: 0,
-                  cachedFragment: null,
-                  hasRendered: false,
-                  buildFragment: function buildFragment(dom) {
-                    var el0 = dom.createDocumentFragment();
-                    var el1 = dom.createElement("span");
-                    var el2 = dom.createTextNode("请将光标置于方框内同时按住扫码键对准车辆条码");
-                    dom.appendChild(el1, el2);
-                    dom.appendChild(el0, el1);
-                    return el0;
-                  },
-                  buildRenderNodes: function buildRenderNodes() {
-                    return [];
-                  },
-                  statements: [],
-                  locals: [],
-                  templates: []
-                };
-              })();
-              var child4 = (function () {
-                return {
-                  meta: {
-                    "revision": "Ember@1.13.11",
-                    "loc": {
-                      "source": null,
-                      "start": {
-                        "line": 1,
-                        "column": 1434
-                      },
-                      "end": {
-                        "line": 1,
-                        "column": 1626
-                      }
-                    },
-                    "moduleName": "htis/templates/scanning.hbs"
-                  },
-                  arity: 0,
-                  cachedFragment: null,
-                  hasRendered: false,
-                  buildFragment: function buildFragment(dom) {
-                    var el0 = dom.createDocumentFragment();
-                    var el1 = dom.createComment("");
-                    dom.appendChild(el0, el1);
-                    return el0;
-                  },
-                  buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                    var morphs = new Array(1);
-                    morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-                    dom.insertBoundary(fragment, 0);
-                    dom.insertBoundary(fragment, null);
-                    return morphs;
-                  },
-                  statements: [["inline", "spin-button", [], ["action", "clearError", "loadedIcon", "glyphicon-remove", "isIcon", true, "isLoading", false, "disabled", false, "title", "清除", "class", "input-group-addin addin-large pull-right is-blank"], ["loc", [null, [1, 1449], [1, 1626]]]]],
-                  locals: [],
-                  templates: []
-                };
-              })();
-              return {
-                meta: {
-                  "revision": "Ember@1.13.11",
-                  "loc": {
-                    "source": null,
-                    "start": {
-                      "line": 1,
-                      "column": 849
-                    },
-                    "end": {
-                      "line": 1,
-                      "column": 1657
-                    }
-                  },
-                  "moduleName": "htis/templates/scanning.hbs"
-                },
-                arity: 0,
-                cachedFragment: null,
-                hasRendered: false,
-                buildFragment: function buildFragment(dom) {
-                  var el0 = dom.createDocumentFragment();
-                  var el1 = dom.createElement("div");
-                  dom.setAttribute(el1, "class", "fix-icon");
-                  var el2 = dom.createComment("");
-                  dom.appendChild(el1, el2);
-                  var el2 = dom.createElement("div");
-                  dom.setAttribute(el2, "class", "icon-title");
-                  var el3 = dom.createComment("");
-                  dom.appendChild(el2, el3);
-                  var el3 = dom.createElement("div");
-                  dom.setAttribute(el3, "class", "input-border-box");
-                  var el4 = dom.createElement("div");
-                  dom.setAttribute(el4, "class", "input-group");
-                  var el5 = dom.createComment("");
-                  dom.appendChild(el4, el5);
-                  var el5 = dom.createComment("");
-                  dom.appendChild(el4, el5);
-                  dom.appendChild(el3, el4);
-                  dom.appendChild(el2, el3);
-                  dom.appendChild(el1, el2);
-                  dom.appendChild(el0, el1);
-                  return el0;
-                },
-                buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                  var element0 = dom.childAt(fragment, [0]);
-                  var element1 = dom.childAt(element0, [1]);
-                  var element2 = dom.childAt(element1, [1, 0]);
-                  var morphs = new Array(4);
-                  morphs[0] = dom.createMorphAt(element0, 0, 0);
-                  morphs[1] = dom.createMorphAt(element1, 0, 0);
-                  morphs[2] = dom.createMorphAt(element2, 0, 0);
-                  morphs[3] = dom.createMorphAt(element2, 1, 1);
-                  return morphs;
-                },
-                statements: [["block", "if", [["get", "isChecking", ["loc", [null, [1, 885], [1, 895]]]]], [], 0, 1, ["loc", [null, [1, 879], [1, 1033]]]], ["block", "if", [["get", "errors.check_errors.length", ["loc", [null, [1, 1063], [1, 1089]]]]], [], 2, 3, ["loc", [null, [1, 1057], [1, 1238]]]], ["inline", "input", [], ["type", "text", "enter", "tryGoNext", "autofocus", "autofocus", "value", ["subexpr", "@mut", [["get", "vinCode", ["loc", [null, [1, 1359], [1, 1366]]]]], [], []], "placeholder", "将光标置于此方框内按住扫码键对准车辆条码", "class", "form-control input-vin"], ["loc", [null, [1, 1293], [1, 1434]]]], ["block", "if", [["get", "vinCode", ["loc", [null, [1, 1440], [1, 1447]]]]], [], 4, null, ["loc", [null, [1, 1434], [1, 1633]]]]],
-                locals: [],
-                templates: [child0, child1, child2, child3, child4]
-              };
-            })();
             return {
               meta: {
                 "revision": "Ember@1.13.11",
@@ -32657,34 +32904,206 @@ define("htis/templates/scanning", ["exports"], function (exports) {
                   "source": null,
                   "start": {
                     "line": 1,
-                    "column": 198
+                    "column": 1027
                   },
                   "end": {
                     "line": 1,
-                    "column": 1664
+                    "column": 1103
                   }
                 },
-                "moduleName": "htis/templates/scanning.hbs"
+                "moduleName": "htis/templates/setting.hbs"
               },
               arity: 0,
               cachedFragment: null,
               hasRendered: false,
               buildFragment: function buildFragment(dom) {
                 var el0 = dom.createDocumentFragment();
-                var el1 = dom.createComment("");
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
                 dom.appendChild(el0, el1);
                 return el0;
               },
-              buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-                var morphs = new Array(1);
-                morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-                dom.insertBoundary(fragment, 0);
-                dom.insertBoundary(fragment, null);
-                return morphs;
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
               },
-              statements: [["block", "if", [["get", "isConfirming", ["loc", [null, [1, 267], [1, 279]]]]], [], 0, 1, ["loc", [null, [1, 261], [1, 1664]]]]],
+              statements: [],
               locals: [],
-              templates: [child0, child1]
+              templates: []
+            };
+          })();
+          var child1 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1273
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1349
+                  }
+                },
+                "moduleName": "htis/templates/setting.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child2 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1525
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1604
+                  }
+                },
+                "moduleName": "htis/templates/setting.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child3 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 1786
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 1868
+                  }
+                },
+                "moduleName": "htis/templates/setting.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child4 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 2036
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 2111
+                  }
+                },
+                "moduleName": "htis/templates/setting.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
+            };
+          })();
+          var child5 = (function () {
+            return {
+              meta: {
+                "revision": "Ember@1.13.11",
+                "loc": {
+                  "source": null,
+                  "start": {
+                    "line": 1,
+                    "column": 2291
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 2372
+                  }
+                },
+                "moduleName": "htis/templates/setting.hbs"
+              },
+              arity: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              buildFragment: function buildFragment(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createElement("span");
+                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              buildRenderNodes: function buildRenderNodes() {
+                return [];
+              },
+              statements: [],
+              locals: [],
+              templates: []
             };
           })();
           return {
@@ -32694,14 +33113,200 @@ define("htis/templates/scanning", ["exports"], function (exports) {
                 "source": null,
                 "start": {
                   "line": 1,
-                  "column": 113
+                  "column": 207
                 },
                 "end": {
                   "line": 1,
-                  "column": 1681
+                  "column": 2401
                 }
               },
-              "moduleName": "htis/templates/scanning.hbs"
+              "moduleName": "htis/templates/setting.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("div");
+              dom.setAttribute(el1, "class", "panel");
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "panel-heading text-center");
+              var el3 = dom.createElement("h3");
+              dom.setAttribute(el3, "class", "panel-title");
+              var el4 = dom.createElement("a");
+              dom.setAttribute(el4, "title", "返回主页");
+              dom.setAttribute(el4, "href", "javascript:void(0)");
+              dom.setAttribute(el4, "class", "btn-home pull-left");
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-home");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("label");
+              dom.setAttribute(el5, "class", "sr-only");
+              var el6 = dom.createTextNode("返回");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              dom.setAttribute(el4, "title", "通知中心");
+              dom.setAttribute(el4, "href", "javascript:void(0)");
+              dom.setAttribute(el4, "class", "btn-bell pull-right");
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "bell-count");
+              var el6 = dom.createComment("");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("div");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-bell");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("label");
+              dom.setAttribute(el5, "class", "sr-only");
+              var el6 = dom.createTextNode("通知中心");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createComment("");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "panel-scroll");
+              var el3 = dom.createElement("div");
+              dom.setAttribute(el3, "class", "list-group list-full");
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("角色管理");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("用户管理");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("项目管理");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("部门管理");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("油品管理");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("a");
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "title");
+              var el6 = dom.createTextNode("偏好设置");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("span");
+              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var element0 = dom.childAt(fragment, [0]);
+              var element1 = dom.childAt(element0, [0, 0]);
+              var element2 = dom.childAt(element1, [0]);
+              var element3 = dom.childAt(element1, [1]);
+              var element4 = dom.childAt(element0, [1, 0]);
+              var element5 = dom.childAt(element4, [0]);
+              var element6 = dom.childAt(element4, [1]);
+              var element7 = dom.childAt(element4, [2]);
+              var element8 = dom.childAt(element4, [3]);
+              var element9 = dom.childAt(element4, [4]);
+              var element10 = dom.childAt(element4, [5]);
+              var morphs = new Array(22);
+              morphs[0] = dom.createElementMorph(element2);
+              morphs[1] = dom.createElementMorph(element3);
+              morphs[2] = dom.createMorphAt(dom.childAt(element3, [0]), 0, 0);
+              morphs[3] = dom.createMorphAt(element1, 2, 2);
+              morphs[4] = dom.createAttrMorph(element5, 'class');
+              morphs[5] = dom.createElementMorph(element5);
+              morphs[6] = dom.createMorphAt(element5, 2, 2);
+              morphs[7] = dom.createAttrMorph(element6, 'class');
+              morphs[8] = dom.createElementMorph(element6);
+              morphs[9] = dom.createMorphAt(element6, 2, 2);
+              morphs[10] = dom.createAttrMorph(element7, 'class');
+              morphs[11] = dom.createElementMorph(element7);
+              morphs[12] = dom.createMorphAt(element7, 2, 2);
+              morphs[13] = dom.createAttrMorph(element8, 'class');
+              morphs[14] = dom.createElementMorph(element8);
+              morphs[15] = dom.createMorphAt(element8, 2, 2);
+              morphs[16] = dom.createAttrMorph(element9, 'class');
+              morphs[17] = dom.createElementMorph(element9);
+              morphs[18] = dom.createMorphAt(element9, 2, 2);
+              morphs[19] = dom.createAttrMorph(element10, 'class');
+              morphs[20] = dom.createElementMorph(element10);
+              morphs[21] = dom.createMorphAt(element10, 2, 2);
+              return morphs;
+            },
+            statements: [["element", "action", ["goHome"], [], ["loc", [null, [1, 377], [1, 396]]]], ["element", "action", ["goBell"], [], ["loc", [null, [1, 547], [1, 566]]]], ["content", "messagesController.model.length", ["loc", [null, [1, 658], [1, 693]]]], ["content", "pannelTitle", ["loc", [null, [1, 782], [1, 797]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isRoles", ["loc", [null, [1, 920], [1, 927]]]], "active"], [], ["loc", [null, [1, 915], [1, 938]]]]]]], ["element", "action", ["goRoles"], [], ["loc", [null, [1, 871], [1, 891]]]], ["block", "if", [["get", "isRoles", ["loc", [null, [1, 1033], [1, 1040]]]]], [], 0, null, ["loc", [null, [1, 1027], [1, 1110]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isUsers", ["loc", [null, [1, 1166], [1, 1173]]]], "active"], [], ["loc", [null, [1, 1161], [1, 1184]]]]]]], ["element", "action", ["goUsers"], [], ["loc", [null, [1, 1117], [1, 1137]]]], ["block", "if", [["get", "isUsers", ["loc", [null, [1, 1279], [1, 1286]]]]], [], 1, null, ["loc", [null, [1, 1273], [1, 1356]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isProjects", ["loc", [null, [1, 1415], [1, 1425]]]], "active"], [], ["loc", [null, [1, 1410], [1, 1436]]]]]]], ["element", "action", ["goProjects"], [], ["loc", [null, [1, 1363], [1, 1386]]]], ["block", "if", [["get", "isProjects", ["loc", [null, [1, 1531], [1, 1541]]]]], [], 2, null, ["loc", [null, [1, 1525], [1, 1611]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isDepartments", ["loc", [null, [1, 1673], [1, 1686]]]], "active"], [], ["loc", [null, [1, 1668], [1, 1697]]]]]]], ["element", "action", ["goDepartments"], [], ["loc", [null, [1, 1618], [1, 1644]]]], ["block", "if", [["get", "isDepartments", ["loc", [null, [1, 1792], [1, 1805]]]]], [], 3, null, ["loc", [null, [1, 1786], [1, 1875]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isOils", ["loc", [null, [1, 1930], [1, 1936]]]], "active"], [], ["loc", [null, [1, 1925], [1, 1947]]]]]]], ["element", "action", ["goOils"], [], ["loc", [null, [1, 1882], [1, 1901]]]], ["block", "if", [["get", "isOils", ["loc", [null, [1, 2042], [1, 2048]]]]], [], 4, null, ["loc", [null, [1, 2036], [1, 2118]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isPreference", ["loc", [null, [1, 2179], [1, 2191]]]], "active"], [], ["loc", [null, [1, 2174], [1, 2202]]]]]]], ["element", "action", ["goPreference"], [], ["loc", [null, [1, 2125], [1, 2150]]]], ["block", "if", [["get", "isPreference", ["loc", [null, [1, 2297], [1, 2309]]]]], [], 5, null, ["loc", [null, [1, 2291], [1, 2379]]]]],
+            locals: [],
+            templates: [child0, child1, child2, child3, child4, child5]
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 2420
+                },
+                "end": {
+                  "line": 1,
+                  "column": 2452
+                }
+              },
+              "moduleName": "htis/templates/setting.hbs"
             },
             arity: 0,
             cachedFragment: null,
@@ -32719,9 +33324,9 @@ define("htis/templates/scanning", ["exports"], function (exports) {
               dom.insertBoundary(fragment, null);
               return morphs;
             },
-            statements: [["block", "detail-panel", [], ["pannelTitle", ["subexpr", "@mut", [["get", "pannelTitle", ["loc", [null, [1, 226], [1, 237]]]]], [], []], "class", "panel-primary"], 0, null, ["loc", [null, [1, 198], [1, 1681]]]]],
+            statements: [["content", "outlet", ["loc", [null, [1, 2442], [1, 2452]]]]],
             locals: [],
-            templates: [child0]
+            templates: []
           };
         })();
         return {
@@ -32731,14 +33336,14 @@ define("htis/templates/scanning", ["exports"], function (exports) {
               "source": null,
               "start": {
                 "line": 1,
-                "column": 82
+                "column": 163
               },
               "end": {
                 "line": 1,
-                "column": 1710
+                "column": 2459
               }
             },
-            "moduleName": "htis/templates/scanning.hbs"
+            "moduleName": "htis/templates/setting.hbs"
           },
           arity: 0,
           cachedFragment: null,
@@ -32759,9 +33364,47 @@ define("htis/templates/scanning", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 141], [1, 150]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 160], [1, 168]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 176], [1, 182]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 190], [1, 196]]]]], [], []]], 0, null, ["loc", [null, [1, 113], [1, 1700]]]], ["content", "outlet", ["loc", [null, [1, 1700], [1, 1710]]]]],
+          statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 235], [1, 244]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 254], [1, 262]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 270], [1, 276]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 284], [1, 290]]]]], [], []]], 0, null, ["loc", [null, [1, 207], [1, 2420]]]], ["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 2426], [1, 2440]]]]], [], 1, null, ["loc", [null, [1, 2420], [1, 2459]]]]],
           locals: [],
-          templates: [child0]
+          templates: [child0, child1]
+        };
+      })();
+      var child1 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 2478
+              },
+              "end": {
+                "line": 1,
+                "column": 2513
+              }
+            },
+            "moduleName": "htis/templates/setting.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(1);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["content", "outlet", ["loc", [null, [1, 2503], [1, 2513]]]]],
+          locals: [],
+          templates: []
         };
       })();
       return {
@@ -32771,14 +33414,14 @@ define("htis/templates/scanning", ["exports"], function (exports) {
             "source": null,
             "start": {
               "line": 1,
-              "column": 65
+              "column": 146
             },
             "end": {
               "line": 1,
-              "column": 1729
+              "column": 2520
             }
           },
-          "moduleName": "htis/templates/scanning.hbs"
+          "moduleName": "htis/templates/setting.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -32787,18 +33430,21 @@ define("htis/templates/scanning", ["exports"], function (exports) {
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createComment("");
           dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
           return el0;
         },
         buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
+          var morphs = new Array(2);
           morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
           dom.insertBoundary(fragment, 0);
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "container-wrap", [], ["isFull", true], 0, null, ["loc", [null, [1, 82], [1, 1729]]]]],
+        statements: [["block", "container-wrap", [], ["isLeft", ["subexpr", "@mut", [["get", "equipment.isNotXs", ["loc", [null, [1, 188], [1, 205]]]]], [], []]], 0, null, ["loc", [null, [1, 163], [1, 2478]]]], ["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 2484], [1, 2501]]]]], [], 1, null, ["loc", [null, [1, 2478], [1, 2520]]]]],
         locals: [],
-        templates: [child0]
+        templates: [child0, child1]
       };
     })();
     var child1 = (function () {
@@ -32809,14 +33455,14 @@ define("htis/templates/scanning", ["exports"], function (exports) {
             "source": null,
             "start": {
               "line": 1,
-              "column": 1729
+              "column": 2520
             },
             "end": {
               "line": 1,
-              "column": 1769
+              "column": 2560
             }
           },
-          "moduleName": "htis/templates/scanning.hbs"
+          "moduleName": "htis/templates/setting.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -32834,7 +33480,7 @@ define("htis/templates/scanning", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["inline", "none-powered", [], ["action", "goBack"], ["loc", [null, [1, 1737], [1, 1769]]]]],
+        statements: [["inline", "none-powered", [], ["action", "goHome"], ["loc", [null, [1, 2528], [1, 2560]]]]],
         locals: [],
         templates: []
       };
@@ -32850,37 +33496,162 @@ define("htis/templates/scanning", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 1782
+            "column": 2573
           }
         },
-        "moduleName": "htis/templates/scanning.hbs"
+        "moduleName": "htis/templates/setting.hbs"
       },
       arity: 0,
       cachedFragment: null,
       hasRendered: false,
       buildFragment: function buildFragment(dom) {
         var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
         var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "id", "scanning");
-        dom.setAttribute(el1, "class", "container-main opacity09 trans-all-05");
+        dom.setAttribute(el1, "id", "setting");
         var el2 = dom.createComment("");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+        var element11 = dom.childAt(fragment, [1]);
+        var morphs = new Array(3);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createAttrMorph(element11, 'class');
+        morphs[2] = dom.createMorphAt(element11, 0, 0);
+        dom.insertBoundary(fragment, 0);
         return morphs;
       },
-      statements: [["block", "if", [["get", "isPowered", ["loc", [null, [1, 71], [1, 80]]]]], [], 0, 1, ["loc", [null, [1, 65], [1, 1776]]]]],
+      statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 96], [1, 130]]]], "is-folded"], [], ["loc", [null, [1, 91], [1, 144]]]]]]], ["block", "if", [["get", "isPowered", ["loc", [null, [1, 152], [1, 161]]]]], [], 0, 1, ["loc", [null, [1, 146], [1, 2567]]]]],
       locals: [],
       templates: [child0, child1]
     };
   })());
 });
-define("htis/templates/setting/departments/department/edit", ["exports"], function (exports) {
+define("htis/templates/setting/departments", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 65
+            }
+          },
+          "moduleName": "htis/templates/setting/departments.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["navigable-pane-list"], [], ["loc", [null, [1, 22], [1, 55]]]], ["content", "outlet", ["loc", [null, [1, 55], [1, 65]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 73
+              },
+              "end": {
+                "line": 1,
+                "column": 148
+              }
+            },
+            "moduleName": "htis/templates/setting/departments.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["navigable-pane-list"], [], ["loc", [null, [1, 105], [1, 138]]]], ["content", "outlet", ["loc", [null, [1, 138], [1, 148]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 65
+            },
+            "end": {
+              "line": 1,
+              "column": 167
+            }
+          },
+          "moduleName": "htis/templates/setting/departments.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 73], [1, 167]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
     return {
       meta: {
         "revision": "Ember@1.13.11",
@@ -32892,10 +33663,10 @@ define("htis/templates/setting/departments/department/edit", ["exports"], functi
           },
           "end": {
             "line": 1,
-            "column": 10
+            "column": 174
           }
         },
-        "moduleName": "htis/templates/setting/departments/department/edit.hbs"
+        "moduleName": "htis/templates/setting/departments.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -32913,9 +33684,9 @@ define("htis/templates/setting/departments/department/edit", ["exports"], functi
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 174]]]]],
       locals: [],
-      templates: []
+      templates: [child0, child1]
     };
   })());
 });
@@ -33429,6 +34200,46 @@ define("htis/templates/setting/departments/department", ["exports"], function (e
     };
   })());
 });
+define("htis/templates/setting/departments/department/edit", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/setting/departments/department/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
 define("htis/templates/setting/departments/new", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
@@ -33466,166 +34277,6 @@ define("htis/templates/setting/departments/new", ["exports"], function (exports)
       statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
       locals: [],
       templates: []
-    };
-  })());
-});
-define("htis/templates/setting/departments", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 65
-            }
-          },
-          "moduleName": "htis/templates/setting/departments.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["navigable-pane-list"], [], ["loc", [null, [1, 22], [1, 55]]]], ["content", "outlet", ["loc", [null, [1, 55], [1, 65]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 73
-              },
-              "end": {
-                "line": 1,
-                "column": 148
-              }
-            },
-            "moduleName": "htis/templates/setting/departments.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["navigable-pane-list"], [], ["loc", [null, [1, 105], [1, 138]]]], ["content", "outlet", ["loc", [null, [1, 138], [1, 148]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 65
-            },
-            "end": {
-              "line": 1,
-              "column": 167
-            }
-          },
-          "moduleName": "htis/templates/setting/departments.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 73], [1, 167]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 174
-          }
-        },
-        "moduleName": "htis/templates/setting/departments.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 174]]]]],
-      locals: [],
-      templates: [child0, child1]
     };
   })());
 });
@@ -35211,8 +35862,128 @@ define("htis/templates/setting/navigable-pane-users", ["exports"], function (exp
     };
   })());
 });
-define("htis/templates/setting/oils/new", ["exports"], function (exports) {
+define("htis/templates/setting/oils", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 73
+            }
+          },
+          "moduleName": "htis/templates/setting/oils.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["setting/navigable-pane-oils"], [], ["loc", [null, [1, 22], [1, 63]]]], ["content", "outlet", ["loc", [null, [1, 63], [1, 73]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 81
+              },
+              "end": {
+                "line": 1,
+                "column": 164
+              }
+            },
+            "moduleName": "htis/templates/setting/oils.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["setting/navigable-pane-oils"], [], ["loc", [null, [1, 113], [1, 154]]]], ["content", "outlet", ["loc", [null, [1, 154], [1, 164]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 73
+            },
+            "end": {
+              "line": 1,
+              "column": 183
+            }
+          },
+          "moduleName": "htis/templates/setting/oils.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 81], [1, 183]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
     return {
       meta: {
         "revision": "Ember@1.13.11",
@@ -35224,10 +35995,10 @@ define("htis/templates/setting/oils/new", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 10
+            "column": 190
           }
         },
-        "moduleName": "htis/templates/setting/oils/new.hbs"
+        "moduleName": "htis/templates/setting/oils.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -35245,13 +36016,13 @@ define("htis/templates/setting/oils/new", ["exports"], function (exports) {
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 190]]]]],
       locals: [],
-      templates: []
+      templates: [child0, child1]
     };
   })());
 });
-define("htis/templates/setting/oils/oil/edit", ["exports"], function (exports) {
+define("htis/templates/setting/oils/new", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -35267,7 +36038,7 @@ define("htis/templates/setting/oils/oil/edit", ["exports"], function (exports) {
             "column": 10
           }
         },
-        "moduleName": "htis/templates/setting/oils/oil/edit.hbs"
+        "moduleName": "htis/templates/setting/oils/new.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -36149,167 +36920,7 @@ define("htis/templates/setting/oils/oil", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/setting/oils", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 73
-            }
-          },
-          "moduleName": "htis/templates/setting/oils.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["setting/navigable-pane-oils"], [], ["loc", [null, [1, 22], [1, 63]]]], ["content", "outlet", ["loc", [null, [1, 63], [1, 73]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 81
-              },
-              "end": {
-                "line": 1,
-                "column": 164
-              }
-            },
-            "moduleName": "htis/templates/setting/oils.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["setting/navigable-pane-oils"], [], ["loc", [null, [1, 113], [1, 154]]]], ["content", "outlet", ["loc", [null, [1, 154], [1, 164]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 73
-            },
-            "end": {
-              "line": 1,
-              "column": 183
-            }
-          },
-          "moduleName": "htis/templates/setting/oils.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 81], [1, 183]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 190
-          }
-        },
-        "moduleName": "htis/templates/setting/oils.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 190]]]]],
-      locals: [],
-      templates: [child0, child1]
-    };
-  })());
-});
-define("htis/templates/setting/preference/edit", ["exports"], function (exports) {
+define("htis/templates/setting/oils/oil/edit", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -36325,7 +36936,7 @@ define("htis/templates/setting/preference/edit", ["exports"], function (exports)
             "column": 10
           }
         },
-        "moduleName": "htis/templates/setting/preference/edit.hbs"
+        "moduleName": "htis/templates/setting/oils/oil/edit.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -36509,7 +37120,7 @@ define("htis/templates/setting/preference", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/setting/projects/new", ["exports"], function (exports) {
+define("htis/templates/setting/preference/edit", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -36525,7 +37136,7 @@ define("htis/templates/setting/projects/new", ["exports"], function (exports) {
             "column": 10
           }
         },
-        "moduleName": "htis/templates/setting/projects/new.hbs"
+        "moduleName": "htis/templates/setting/preference/edit.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -36549,7 +37160,167 @@ define("htis/templates/setting/projects/new", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/setting/projects/project/edit", ["exports"], function (exports) {
+define("htis/templates/setting/projects", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 77
+            }
+          },
+          "moduleName": "htis/templates/setting/projects.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["setting/navigable-pane-projects"], [], ["loc", [null, [1, 22], [1, 67]]]], ["content", "outlet", ["loc", [null, [1, 67], [1, 77]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 85
+              },
+              "end": {
+                "line": 1,
+                "column": 172
+              }
+            },
+            "moduleName": "htis/templates/setting/projects.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["setting/navigable-pane-projects"], [], ["loc", [null, [1, 117], [1, 162]]]], ["content", "outlet", ["loc", [null, [1, 162], [1, 172]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 77
+            },
+            "end": {
+              "line": 1,
+              "column": 191
+            }
+          },
+          "moduleName": "htis/templates/setting/projects.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 85], [1, 191]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 198
+          }
+        },
+        "moduleName": "htis/templates/setting/projects.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 198]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
+define("htis/templates/setting/projects/new", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -36565,7 +37336,7 @@ define("htis/templates/setting/projects/project/edit", ["exports"], function (ex
             "column": 10
           }
         },
-        "moduleName": "htis/templates/setting/projects/project/edit.hbs"
+        "moduleName": "htis/templates/setting/projects/new.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -37425,167 +38196,7 @@ define("htis/templates/setting/projects/project", ["exports"], function (exports
     };
   })());
 });
-define("htis/templates/setting/projects", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 77
-            }
-          },
-          "moduleName": "htis/templates/setting/projects.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["setting/navigable-pane-projects"], [], ["loc", [null, [1, 22], [1, 67]]]], ["content", "outlet", ["loc", [null, [1, 67], [1, 77]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 85
-              },
-              "end": {
-                "line": 1,
-                "column": 172
-              }
-            },
-            "moduleName": "htis/templates/setting/projects.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["setting/navigable-pane-projects"], [], ["loc", [null, [1, 117], [1, 162]]]], ["content", "outlet", ["loc", [null, [1, 162], [1, 172]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 77
-            },
-            "end": {
-              "line": 1,
-              "column": 191
-            }
-          },
-          "moduleName": "htis/templates/setting/projects.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 85], [1, 191]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 198
-          }
-        },
-        "moduleName": "htis/templates/setting/projects.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 198]]]]],
-      locals: [],
-      templates: [child0, child1]
-    };
-  })());
-});
-define("htis/templates/setting/roles/new", ["exports"], function (exports) {
+define("htis/templates/setting/projects/project/edit", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -37601,7 +38212,7 @@ define("htis/templates/setting/roles/new", ["exports"], function (exports) {
             "column": 10
           }
         },
-        "moduleName": "htis/templates/setting/roles/new.hbs"
+        "moduleName": "htis/templates/setting/projects/project/edit.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -37625,7 +38236,167 @@ define("htis/templates/setting/roles/new", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/setting/roles/role/edit", ["exports"], function (exports) {
+define("htis/templates/setting/roles", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 65
+            }
+          },
+          "moduleName": "htis/templates/setting/roles.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(2);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["inline", "partial", ["navigable-pane-list"], [], ["loc", [null, [1, 22], [1, 55]]]], ["content", "outlet", ["loc", [null, [1, 55], [1, 65]]]]],
+        locals: [],
+        templates: []
+      };
+    })();
+    var child1 = (function () {
+      var child0 = (function () {
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 73
+              },
+              "end": {
+                "line": 1,
+                "column": 148
+              }
+            },
+            "moduleName": "htis/templates/setting/roles.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var morphs = new Array(2);
+            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+            dom.insertBoundary(fragment, 0);
+            dom.insertBoundary(fragment, null);
+            return morphs;
+          },
+          statements: [["inline", "partial", ["navigable-pane-list"], [], ["loc", [null, [1, 105], [1, 138]]]], ["content", "outlet", ["loc", [null, [1, 138], [1, 148]]]]],
+          locals: [],
+          templates: []
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 65
+            },
+            "end": {
+              "line": 1,
+              "column": 167
+            }
+          },
+          "moduleName": "htis/templates/setting/roles.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 73], [1, 167]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 174
+          }
+        },
+        "moduleName": "htis/templates/setting/roles.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 174]]]]],
+      locals: [],
+      templates: [child0, child1]
+    };
+  })());
+});
+define("htis/templates/setting/roles/new", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     return {
       meta: {
@@ -37641,7 +38412,7 @@ define("htis/templates/setting/roles/role/edit", ["exports"], function (exports)
             "column": 10
           }
         },
-        "moduleName": "htis/templates/setting/roles/role/edit.hbs"
+        "moduleName": "htis/templates/setting/roles/new.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -38344,7 +39115,47 @@ define("htis/templates/setting/roles/role", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/setting/roles", ["exports"], function (exports) {
+define("htis/templates/setting/roles/role/edit", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 10
+          }
+        },
+        "moduleName": "htis/templates/setting/roles/role/edit.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(1);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
+      locals: [],
+      templates: []
+    };
+  })());
+});
+define("htis/templates/setting/users", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
       return {
@@ -38358,10 +39169,10 @@ define("htis/templates/setting/roles", ["exports"], function (exports) {
             },
             "end": {
               "line": 1,
-              "column": 65
+              "column": 74
             }
           },
-          "moduleName": "htis/templates/setting/roles.hbs"
+          "moduleName": "htis/templates/setting/users.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -38382,7 +39193,7 @@ define("htis/templates/setting/roles", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["inline", "partial", ["navigable-pane-list"], [], ["loc", [null, [1, 22], [1, 55]]]], ["content", "outlet", ["loc", [null, [1, 55], [1, 65]]]]],
+        statements: [["inline", "partial", ["setting/navigable-pane-users"], [], ["loc", [null, [1, 22], [1, 64]]]], ["content", "outlet", ["loc", [null, [1, 64], [1, 74]]]]],
         locals: [],
         templates: []
       };
@@ -38396,14 +39207,14 @@ define("htis/templates/setting/roles", ["exports"], function (exports) {
               "source": null,
               "start": {
                 "line": 1,
-                "column": 73
+                "column": 82
               },
               "end": {
                 "line": 1,
-                "column": 148
+                "column": 166
               }
             },
-            "moduleName": "htis/templates/setting/roles.hbs"
+            "moduleName": "htis/templates/setting/users.hbs"
           },
           arity: 0,
           cachedFragment: null,
@@ -38424,7 +39235,7 @@ define("htis/templates/setting/roles", ["exports"], function (exports) {
             dom.insertBoundary(fragment, null);
             return morphs;
           },
-          statements: [["inline", "partial", ["navigable-pane-list"], [], ["loc", [null, [1, 105], [1, 138]]]], ["content", "outlet", ["loc", [null, [1, 138], [1, 148]]]]],
+          statements: [["inline", "partial", ["setting/navigable-pane-users"], [], ["loc", [null, [1, 114], [1, 156]]]], ["content", "outlet", ["loc", [null, [1, 156], [1, 166]]]]],
           locals: [],
           templates: []
         };
@@ -38436,14 +39247,14 @@ define("htis/templates/setting/roles", ["exports"], function (exports) {
             "source": null,
             "start": {
               "line": 1,
-              "column": 65
+              "column": 74
             },
             "end": {
               "line": 1,
-              "column": 167
+              "column": 185
             }
           },
-          "moduleName": "htis/templates/setting/roles.hbs"
+          "moduleName": "htis/templates/setting/users.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -38461,7 +39272,7 @@ define("htis/templates/setting/roles", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 73], [1, 167]]]]],
+        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 82], [1, 185]]]]],
         locals: [],
         templates: [child0]
       };
@@ -38477,10 +39288,10 @@ define("htis/templates/setting/roles", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 174
+            "column": 192
           }
         },
-        "moduleName": "htis/templates/setting/roles.hbs"
+        "moduleName": "htis/templates/setting/users.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -38498,7 +39309,7 @@ define("htis/templates/setting/roles", ["exports"], function (exports) {
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 174]]]]],
+      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 192]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -38541,291 +39352,6 @@ define("htis/templates/setting/users/new", ["exports"], function (exports) {
       statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
       locals: [],
       templates: []
-    };
-  })());
-});
-define("htis/templates/setting/users/user/edit", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 10
-          }
-        },
-        "moduleName": "htis/templates/setting/users/user/edit.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(1);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
-      locals: [],
-      templates: []
-    };
-  })());
-});
-define("htis/templates/setting/users/user/resetpwd", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      var child0 = (function () {
-        var child0 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 495
-                },
-                "end": {
-                  "line": 1,
-                  "column": 598
-                }
-              },
-              "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("span");
-              dom.setAttribute(el1, "class", "glyphicon glyphicon-remove form-control-feedback");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes() {
-              return [];
-            },
-            statements: [],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child1 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 605
-                },
-                "end": {
-                  "line": 1,
-                  "column": 710
-                }
-              },
-              "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
-            },
-            arity: 1,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("div");
-              dom.setAttribute(el1, "class", "help-block text-danger");
-              var el2 = dom.createComment("");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
-              return morphs;
-            },
-            statements: [["content", "error.message", ["loc", [null, [1, 687], [1, 704]]]]],
-            locals: ["error"],
-            templates: []
-          };
-        })();
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 79
-              },
-              "end": {
-                "line": 1,
-                "column": 1062
-              }
-            },
-            "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createElement("ul");
-            dom.setAttribute(el1, "class", "list-group list-full form-horizontal");
-            var el2 = dom.createElement("li");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "new_password");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("将密码重置为");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createComment("");
-            dom.appendChild(el3, el4);
-            var el4 = dom.createComment("");
-            dom.appendChild(el3, el4);
-            var el4 = dom.createComment("");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            dom.appendChild(el0, el1);
-            var el1 = dom.createElement("ul");
-            dom.setAttribute(el1, "class", "list-group list-full");
-            var el2 = dom.createElement("div");
-            dom.setAttribute(el2, "class", "help-block text-center");
-            var el3 = dom.createTextNode("保存后用户[");
-            dom.appendChild(el2, el3);
-            var el3 = dom.createComment("");
-            dom.appendChild(el2, el3);
-            var el3 = dom.createTextNode("]的密码将被重置为:");
-            dom.appendChild(el2, el3);
-            var el3 = dom.createComment("");
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createComment("");
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("button");
-            dom.setAttribute(el2, "class", "btn btn-default btn-block");
-            var el3 = dom.createTextNode("取消");
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element0 = dom.childAt(fragment, [0, 0]);
-            var element1 = dom.childAt(element0, [1]);
-            var element2 = dom.childAt(fragment, [1]);
-            var element3 = dom.childAt(element2, [0]);
-            var element4 = dom.childAt(element2, [2]);
-            var morphs = new Array(8);
-            morphs[0] = dom.createAttrMorph(element0, 'class');
-            morphs[1] = dom.createMorphAt(element1, 0, 0);
-            morphs[2] = dom.createMorphAt(element1, 1, 1);
-            morphs[3] = dom.createMorphAt(element1, 2, 2);
-            morphs[4] = dom.createMorphAt(element3, 1, 1);
-            morphs[5] = dom.createMorphAt(element3, 3, 3);
-            morphs[6] = dom.createMorphAt(element2, 1, 1);
-            morphs[7] = dom.createElementMorph(element4);
-            return morphs;
-          },
-          statements: [["attribute", "class", ["concat", ["list-group-item form-group has-feedback ", ["subexpr", "if", [["get", "model.errors.new_password.length", ["loc", [null, [1, 249], [1, 281]]]], "has-error"], [], ["loc", [null, [1, 244], [1, 295]]]]]]], ["inline", "input", [], ["id", "new_password", "type", "text", "value", ["subexpr", "@mut", [["get", "model.new_password", ["loc", [null, [1, 454], [1, 472]]]]], [], []], "class", "form-control"], ["loc", [null, [1, 410], [1, 495]]]], ["block", "if", [["get", "model.errors.new_password", ["loc", [null, [1, 501], [1, 526]]]]], [], 0, null, ["loc", [null, [1, 495], [1, 605]]]], ["block", "each", [["get", "model.errors.new_password", ["loc", [null, [1, 613], [1, 638]]]]], [], 1, null, ["loc", [null, [1, 605], [1, 719]]]], ["content", "model.userObject.name", ["loc", [null, [1, 810], [1, 835]]]], ["content", "model.new_password", ["loc", [null, [1, 845], [1, 867]]]], ["inline", "spin-button", [], ["action", "save", "isLoading", ["subexpr", "@mut", [["get", "isSaving", ["loc", [null, [1, 911], [1, 919]]]]], [], []], "disabled", ["subexpr", "@mut", [["get", "isUnSavable", ["loc", [null, [1, 929], [1, 940]]]]], [], []], "title", "保存", "class", "btn btn-info btn-block"], ["loc", [null, [1, 873], [1, 984]]]], ["element", "action", ["cancel"], [], ["loc", [null, [1, 992], [1, 1011]]]]],
-          locals: [],
-          templates: [child0, child1]
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 1079
-            }
-          },
-          "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "detail-panel", [], ["pannelTitle", ["subexpr", "@mut", [["get", "pannelTitle", ["loc", [null, [1, 107], [1, 118]]]]], [], []], "isLeftButtonNeeded", true], 0, null, ["loc", [null, [1, 79], [1, 1079]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 1134
-          }
-        },
-        "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(3);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-        morphs[2] = dom.createMorphAt(fragment, 2, 2, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 28], [1, 37]]]]], [], []], "isActive", true, "isBack", false, "isHide", false], 0, null, ["loc", [null, [1, 0], [1, 1098]]]], ["inline", "partial", ["common-alert"], [], ["loc", [null, [1, 1098], [1, 1124]]]], ["content", "outlet", ["loc", [null, [1, 1124], [1, 1134]]]]],
-      locals: [],
-      templates: [child0]
     };
   })());
 });
@@ -40825,128 +41351,8 @@ define("htis/templates/setting/users/user", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/setting/users", ["exports"], function (exports) {
+define("htis/templates/setting/users/user/edit", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 74
-            }
-          },
-          "moduleName": "htis/templates/setting/users.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["inline", "partial", ["setting/navigable-pane-users"], [], ["loc", [null, [1, 22], [1, 64]]]], ["content", "outlet", ["loc", [null, [1, 64], [1, 74]]]]],
-        locals: [],
-        templates: []
-      };
-    })();
-    var child1 = (function () {
-      var child0 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 82
-              },
-              "end": {
-                "line": 1,
-                "column": 166
-              }
-            },
-            "moduleName": "htis/templates/setting/users.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["inline", "partial", ["setting/navigable-pane-users"], [], ["loc", [null, [1, 114], [1, 156]]]], ["content", "outlet", ["loc", [null, [1, 156], [1, 166]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 74
-            },
-            "end": {
-              "line": 1,
-              "column": 185
-            }
-          },
-          "moduleName": "htis/templates/setting/users.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isRight", true], 0, null, ["loc", [null, [1, 82], [1, 185]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
     return {
       meta: {
         "revision": "Ember@1.13.11",
@@ -40958,10 +41364,10 @@ define("htis/templates/setting/users", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 192
+            "column": 10
           }
         },
-        "moduleName": "htis/templates/setting/users.hbs"
+        "moduleName": "htis/templates/setting/users/user/edit.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -40979,227 +41385,17 @@ define("htis/templates/setting/users", ["exports"], function (exports) {
         dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 6], [1, 20]]]]], [], 0, 1, ["loc", [null, [1, 0], [1, 192]]]]],
+      statements: [["content", "outlet", ["loc", [null, [1, 0], [1, 10]]]]],
       locals: [],
-      templates: [child0, child1]
+      templates: []
     };
   })());
 });
-define("htis/templates/setting", ["exports"], function (exports) {
+define("htis/templates/setting/users/user/resetpwd", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
       var child0 = (function () {
         var child0 = (function () {
-          var child0 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1027
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1103
-                  }
-                },
-                "moduleName": "htis/templates/setting.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child1 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1273
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1349
-                  }
-                },
-                "moduleName": "htis/templates/setting.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child2 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1525
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1604
-                  }
-                },
-                "moduleName": "htis/templates/setting.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child3 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 1786
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 1868
-                  }
-                },
-                "moduleName": "htis/templates/setting.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child4 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 2036
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 2111
-                  }
-                },
-                "moduleName": "htis/templates/setting.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
-          var child5 = (function () {
-            return {
-              meta: {
-                "revision": "Ember@1.13.11",
-                "loc": {
-                  "source": null,
-                  "start": {
-                    "line": 1,
-                    "column": 2291
-                  },
-                  "end": {
-                    "line": 1,
-                    "column": 2372
-                  }
-                },
-                "moduleName": "htis/templates/setting.hbs"
-              },
-              arity: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              buildFragment: function buildFragment(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createElement("span");
-                dom.setAttribute(el1, "class", "glyphicon glyphicon-bookmark pull-right");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              buildRenderNodes: function buildRenderNodes() {
-                return [];
-              },
-              statements: [],
-              locals: [],
-              templates: []
-            };
-          })();
           return {
             meta: {
               "revision": "Ember@1.13.11",
@@ -41207,182 +41403,31 @@ define("htis/templates/setting", ["exports"], function (exports) {
                 "source": null,
                 "start": {
                   "line": 1,
-                  "column": 207
+                  "column": 495
                 },
                 "end": {
                   "line": 1,
-                  "column": 2401
+                  "column": 598
                 }
               },
-              "moduleName": "htis/templates/setting.hbs"
+              "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
             },
             arity: 0,
             cachedFragment: null,
             hasRendered: false,
             buildFragment: function buildFragment(dom) {
               var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("div");
-              dom.setAttribute(el1, "class", "panel");
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "panel-heading text-center");
-              var el3 = dom.createElement("h3");
-              dom.setAttribute(el3, "class", "panel-title");
-              var el4 = dom.createElement("a");
-              dom.setAttribute(el4, "title", "返回主页");
-              dom.setAttribute(el4, "href", "javascript:void(0)");
-              dom.setAttribute(el4, "class", "btn-home pull-left");
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-home");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("label");
-              dom.setAttribute(el5, "class", "sr-only");
-              var el6 = dom.createTextNode("返回");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              dom.setAttribute(el4, "title", "通知中心");
-              dom.setAttribute(el4, "href", "javascript:void(0)");
-              dom.setAttribute(el4, "class", "btn-bell pull-right");
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "bell-count");
-              var el6 = dom.createComment("");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("div");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-bell");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("label");
-              dom.setAttribute(el5, "class", "sr-only");
-              var el6 = dom.createTextNode("通知中心");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createComment("");
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "panel-scroll");
-              var el3 = dom.createElement("div");
-              dom.setAttribute(el3, "class", "list-group list-full");
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("角色管理");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("用户管理");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("项目管理");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("部门管理");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("油品管理");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("a");
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "title");
-              var el6 = dom.createTextNode("偏好设置");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("span");
-              dom.setAttribute(el5, "class", "glyphicon glyphicon-book pull-left");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createComment("");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1, "class", "glyphicon glyphicon-remove form-control-feedback");
               dom.appendChild(el0, el1);
               return el0;
             },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var element0 = dom.childAt(fragment, [0]);
-              var element1 = dom.childAt(element0, [0, 0]);
-              var element2 = dom.childAt(element1, [0]);
-              var element3 = dom.childAt(element1, [1]);
-              var element4 = dom.childAt(element0, [1, 0]);
-              var element5 = dom.childAt(element4, [0]);
-              var element6 = dom.childAt(element4, [1]);
-              var element7 = dom.childAt(element4, [2]);
-              var element8 = dom.childAt(element4, [3]);
-              var element9 = dom.childAt(element4, [4]);
-              var element10 = dom.childAt(element4, [5]);
-              var morphs = new Array(22);
-              morphs[0] = dom.createElementMorph(element2);
-              morphs[1] = dom.createElementMorph(element3);
-              morphs[2] = dom.createMorphAt(dom.childAt(element3, [0]), 0, 0);
-              morphs[3] = dom.createMorphAt(element1, 2, 2);
-              morphs[4] = dom.createAttrMorph(element5, 'class');
-              morphs[5] = dom.createElementMorph(element5);
-              morphs[6] = dom.createMorphAt(element5, 2, 2);
-              morphs[7] = dom.createAttrMorph(element6, 'class');
-              morphs[8] = dom.createElementMorph(element6);
-              morphs[9] = dom.createMorphAt(element6, 2, 2);
-              morphs[10] = dom.createAttrMorph(element7, 'class');
-              morphs[11] = dom.createElementMorph(element7);
-              morphs[12] = dom.createMorphAt(element7, 2, 2);
-              morphs[13] = dom.createAttrMorph(element8, 'class');
-              morphs[14] = dom.createElementMorph(element8);
-              morphs[15] = dom.createMorphAt(element8, 2, 2);
-              morphs[16] = dom.createAttrMorph(element9, 'class');
-              morphs[17] = dom.createElementMorph(element9);
-              morphs[18] = dom.createMorphAt(element9, 2, 2);
-              morphs[19] = dom.createAttrMorph(element10, 'class');
-              morphs[20] = dom.createElementMorph(element10);
-              morphs[21] = dom.createMorphAt(element10, 2, 2);
-              return morphs;
+            buildRenderNodes: function buildRenderNodes() {
+              return [];
             },
-            statements: [["element", "action", ["goHome"], [], ["loc", [null, [1, 377], [1, 396]]]], ["element", "action", ["goBell"], [], ["loc", [null, [1, 547], [1, 566]]]], ["content", "messagesController.model.length", ["loc", [null, [1, 658], [1, 693]]]], ["content", "pannelTitle", ["loc", [null, [1, 782], [1, 797]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isRoles", ["loc", [null, [1, 920], [1, 927]]]], "active"], [], ["loc", [null, [1, 915], [1, 938]]]]]]], ["element", "action", ["goRoles"], [], ["loc", [null, [1, 871], [1, 891]]]], ["block", "if", [["get", "isRoles", ["loc", [null, [1, 1033], [1, 1040]]]]], [], 0, null, ["loc", [null, [1, 1027], [1, 1110]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isUsers", ["loc", [null, [1, 1166], [1, 1173]]]], "active"], [], ["loc", [null, [1, 1161], [1, 1184]]]]]]], ["element", "action", ["goUsers"], [], ["loc", [null, [1, 1117], [1, 1137]]]], ["block", "if", [["get", "isUsers", ["loc", [null, [1, 1279], [1, 1286]]]]], [], 1, null, ["loc", [null, [1, 1273], [1, 1356]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isProjects", ["loc", [null, [1, 1415], [1, 1425]]]], "active"], [], ["loc", [null, [1, 1410], [1, 1436]]]]]]], ["element", "action", ["goProjects"], [], ["loc", [null, [1, 1363], [1, 1386]]]], ["block", "if", [["get", "isProjects", ["loc", [null, [1, 1531], [1, 1541]]]]], [], 2, null, ["loc", [null, [1, 1525], [1, 1611]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isDepartments", ["loc", [null, [1, 1673], [1, 1686]]]], "active"], [], ["loc", [null, [1, 1668], [1, 1697]]]]]]], ["element", "action", ["goDepartments"], [], ["loc", [null, [1, 1618], [1, 1644]]]], ["block", "if", [["get", "isDepartments", ["loc", [null, [1, 1792], [1, 1805]]]]], [], 3, null, ["loc", [null, [1, 1786], [1, 1875]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isOils", ["loc", [null, [1, 1930], [1, 1936]]]], "active"], [], ["loc", [null, [1, 1925], [1, 1947]]]]]]], ["element", "action", ["goOils"], [], ["loc", [null, [1, 1882], [1, 1901]]]], ["block", "if", [["get", "isOils", ["loc", [null, [1, 2042], [1, 2048]]]]], [], 4, null, ["loc", [null, [1, 2036], [1, 2118]]]], ["attribute", "class", ["concat", ["list-group-item ", ["subexpr", "if", [["get", "isPreference", ["loc", [null, [1, 2179], [1, 2191]]]], "active"], [], ["loc", [null, [1, 2174], [1, 2202]]]]]]], ["element", "action", ["goPreference"], [], ["loc", [null, [1, 2125], [1, 2150]]]], ["block", "if", [["get", "isPreference", ["loc", [null, [1, 2297], [1, 2309]]]]], [], 5, null, ["loc", [null, [1, 2291], [1, 2379]]]]],
+            statements: [],
             locals: [],
-            templates: [child0, child1, child2, child3, child4, child5]
+            templates: []
           };
         })();
         var child1 = (function () {
@@ -41393,33 +41438,34 @@ define("htis/templates/setting", ["exports"], function (exports) {
                 "source": null,
                 "start": {
                   "line": 1,
-                  "column": 2420
+                  "column": 605
                 },
                 "end": {
                   "line": 1,
-                  "column": 2452
+                  "column": 710
                 }
               },
-              "moduleName": "htis/templates/setting.hbs"
+              "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
             },
-            arity: 0,
+            arity: 1,
             cachedFragment: null,
             hasRendered: false,
             buildFragment: function buildFragment(dom) {
               var el0 = dom.createDocumentFragment();
-              var el1 = dom.createComment("");
+              var el1 = dom.createElement("div");
+              dom.setAttribute(el1, "class", "help-block text-danger");
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
               dom.appendChild(el0, el1);
               return el0;
             },
             buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
               var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-              dom.insertBoundary(fragment, 0);
-              dom.insertBoundary(fragment, null);
+              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
               return morphs;
             },
-            statements: [["content", "outlet", ["loc", [null, [1, 2442], [1, 2452]]]]],
-            locals: [],
+            statements: [["content", "error.message", ["loc", [null, [1, 687], [1, 704]]]]],
+            locals: ["error"],
             templates: []
           };
         })();
@@ -41430,77 +41476,85 @@ define("htis/templates/setting", ["exports"], function (exports) {
               "source": null,
               "start": {
                 "line": 1,
-                "column": 163
+                "column": 79
               },
               "end": {
                 "line": 1,
-                "column": 2459
+                "column": 1062
               }
             },
-            "moduleName": "htis/templates/setting.hbs"
+            "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
           },
           arity: 0,
           cachedFragment: null,
           hasRendered: false,
           buildFragment: function buildFragment(dom) {
             var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
+            var el1 = dom.createElement("ul");
+            dom.setAttribute(el1, "class", "list-group list-full form-horizontal");
+            var el2 = dom.createElement("li");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "new_password");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("将密码重置为");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            var el4 = dom.createComment("");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
             dom.appendChild(el0, el1);
-            var el1 = dom.createComment("");
+            var el1 = dom.createElement("ul");
+            dom.setAttribute(el1, "class", "list-group list-full");
+            var el2 = dom.createElement("div");
+            dom.setAttribute(el2, "class", "help-block text-center");
+            var el3 = dom.createTextNode("保存后用户[");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createComment("");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("]的密码将被重置为:");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createComment("");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("button");
+            dom.setAttribute(el2, "class", "btn btn-default btn-block");
+            var el3 = dom.createTextNode("取消");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
             dom.appendChild(el0, el1);
             return el0;
           },
           buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(2);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
+            var element0 = dom.childAt(fragment, [0, 0]);
+            var element1 = dom.childAt(element0, [1]);
+            var element2 = dom.childAt(fragment, [1]);
+            var element3 = dom.childAt(element2, [0]);
+            var element4 = dom.childAt(element2, [2]);
+            var morphs = new Array(8);
+            morphs[0] = dom.createAttrMorph(element0, 'class');
+            morphs[1] = dom.createMorphAt(element1, 0, 0);
+            morphs[2] = dom.createMorphAt(element1, 1, 1);
+            morphs[3] = dom.createMorphAt(element1, 2, 2);
+            morphs[4] = dom.createMorphAt(element3, 1, 1);
+            morphs[5] = dom.createMorphAt(element3, 3, 3);
+            morphs[6] = dom.createMorphAt(element2, 1, 1);
+            morphs[7] = dom.createElementMorph(element4);
             return morphs;
           },
-          statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 235], [1, 244]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 254], [1, 262]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 270], [1, 276]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 284], [1, 290]]]]], [], []]], 0, null, ["loc", [null, [1, 207], [1, 2420]]]], ["block", "if", [["get", "equipment.isXs", ["loc", [null, [1, 2426], [1, 2440]]]]], [], 1, null, ["loc", [null, [1, 2420], [1, 2459]]]]],
+          statements: [["attribute", "class", ["concat", ["list-group-item form-group has-feedback ", ["subexpr", "if", [["get", "model.errors.new_password.length", ["loc", [null, [1, 249], [1, 281]]]], "has-error"], [], ["loc", [null, [1, 244], [1, 295]]]]]]], ["inline", "input", [], ["id", "new_password", "type", "text", "value", ["subexpr", "@mut", [["get", "model.new_password", ["loc", [null, [1, 454], [1, 472]]]]], [], []], "class", "form-control"], ["loc", [null, [1, 410], [1, 495]]]], ["block", "if", [["get", "model.errors.new_password", ["loc", [null, [1, 501], [1, 526]]]]], [], 0, null, ["loc", [null, [1, 495], [1, 605]]]], ["block", "each", [["get", "model.errors.new_password", ["loc", [null, [1, 613], [1, 638]]]]], [], 1, null, ["loc", [null, [1, 605], [1, 719]]]], ["content", "model.userObject.name", ["loc", [null, [1, 810], [1, 835]]]], ["content", "model.new_password", ["loc", [null, [1, 845], [1, 867]]]], ["inline", "spin-button", [], ["action", "save", "isLoading", ["subexpr", "@mut", [["get", "isSaving", ["loc", [null, [1, 911], [1, 919]]]]], [], []], "disabled", ["subexpr", "@mut", [["get", "isUnSavable", ["loc", [null, [1, 929], [1, 940]]]]], [], []], "title", "保存", "class", "btn btn-info btn-block"], ["loc", [null, [1, 873], [1, 984]]]], ["element", "action", ["cancel"], [], ["loc", [null, [1, 992], [1, 1011]]]]],
           locals: [],
           templates: [child0, child1]
         };
       })();
-      var child1 = (function () {
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 2478
-              },
-              "end": {
-                "line": 1,
-                "column": 2513
-              }
-            },
-            "moduleName": "htis/templates/setting.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var morphs = new Array(1);
-            morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-            dom.insertBoundary(fragment, 0);
-            dom.insertBoundary(fragment, null);
-            return morphs;
-          },
-          statements: [["content", "outlet", ["loc", [null, [1, 2503], [1, 2513]]]]],
-          locals: [],
-          templates: []
-        };
-      })();
       return {
         meta: {
           "revision": "Ember@1.13.11",
@@ -41508,55 +41562,14 @@ define("htis/templates/setting", ["exports"], function (exports) {
             "source": null,
             "start": {
               "line": 1,
-              "column": 146
+              "column": 0
             },
             "end": {
               "line": 1,
-              "column": 2520
+              "column": 1079
             }
           },
-          "moduleName": "htis/templates/setting.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(2);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "container-wrap", [], ["isLeft", ["subexpr", "@mut", [["get", "equipment.isNotXs", ["loc", [null, [1, 188], [1, 205]]]]], [], []]], 0, null, ["loc", [null, [1, 163], [1, 2478]]]], ["block", "if", [["get", "equipment.isNotXs", ["loc", [null, [1, 2484], [1, 2501]]]]], [], 1, null, ["loc", [null, [1, 2478], [1, 2520]]]]],
-        locals: [],
-        templates: [child0, child1]
-      };
-    })();
-    var child1 = (function () {
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 2520
-            },
-            "end": {
-              "line": 1,
-              "column": 2560
-            }
-          },
-          "moduleName": "htis/templates/setting.hbs"
+          "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
         },
         arity: 0,
         cachedFragment: null,
@@ -41574,9 +41587,9 @@ define("htis/templates/setting", ["exports"], function (exports) {
           dom.insertBoundary(fragment, null);
           return morphs;
         },
-        statements: [["inline", "none-powered", [], ["action", "goHome"], ["loc", [null, [1, 2528], [1, 2560]]]]],
+        statements: [["block", "detail-panel", [], ["pannelTitle", ["subexpr", "@mut", [["get", "pannelTitle", ["loc", [null, [1, 107], [1, 118]]]]], [], []], "isLeftButtonNeeded", true], 0, null, ["loc", [null, [1, 79], [1, 1079]]]]],
         locals: [],
-        templates: []
+        templates: [child0]
       };
     })();
     return {
@@ -41590,10 +41603,10 @@ define("htis/templates/setting", ["exports"], function (exports) {
           },
           "end": {
             "line": 1,
-            "column": 2573
+            "column": 1134
           }
         },
-        "moduleName": "htis/templates/setting.hbs"
+        "moduleName": "htis/templates/setting/users/user/resetpwd.hbs"
       },
       arity: 0,
       cachedFragment: null,
@@ -41602,25 +41615,24 @@ define("htis/templates/setting", ["exports"], function (exports) {
         var el0 = dom.createDocumentFragment();
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1, "id", "setting");
-        var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         return el0;
       },
       buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var element11 = dom.childAt(fragment, [1]);
         var morphs = new Array(3);
         morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        morphs[1] = dom.createAttrMorph(element11, 'class');
-        morphs[2] = dom.createMorphAt(element11, 0, 0);
+        morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+        morphs[2] = dom.createMorphAt(fragment, 2, 2, contextualElement);
         dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
         return morphs;
       },
-      statements: [["inline", "partial", ["container-side"], [], ["loc", [null, [1, 0], [1, 28]]]], ["attribute", "class", ["concat", ["container-main opacity09 trans-all-05 ", ["subexpr", "if", [["get", "applicationController.isSideActive", ["loc", [null, [1, 96], [1, 130]]]], "is-folded"], [], ["loc", [null, [1, 91], [1, 144]]]]]]], ["block", "if", [["get", "isPowered", ["loc", [null, [1, 152], [1, 161]]]]], [], 0, 1, ["loc", [null, [1, 146], [1, 2567]]]]],
+      statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 28], [1, 37]]]]], [], []], "isActive", true, "isBack", false, "isHide", false], 0, null, ["loc", [null, [1, 0], [1, 1098]]]], ["inline", "partial", ["common-alert"], [], ["loc", [null, [1, 1098], [1, 1124]]]], ["content", "outlet", ["loc", [null, [1, 1124], [1, 1134]]]]],
       locals: [],
-      templates: [child0, child1]
+      templates: [child0]
     };
   })());
 });
@@ -43292,740 +43304,6 @@ define("htis/templates/shortcut", ["exports"], function (exports) {
     };
   })());
 });
-define("htis/templates/start/bill", ["exports"], function (exports) {
-  exports["default"] = Ember.HTMLBars.template((function () {
-    var child0 = (function () {
-      var child0 = (function () {
-        var child0 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 413
-                },
-                "end": {
-                  "line": 1,
-                  "column": 511
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("span");
-              dom.setAttribute(el1, "class", "glyphicon glyphicon-warning-sign text-danger pull-right");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes() {
-              return [];
-            },
-            statements: [],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child1 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 518
-                },
-                "end": {
-                  "line": 1,
-                  "column": 628
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("span");
-              dom.setAttribute(el1, "class", "glyphicon glyphicon-pawn text-success pull-right");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes() {
-              return [];
-            },
-            statements: [],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child2 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 833
-                },
-                "end": {
-                  "line": 1,
-                  "column": 870
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createComment("");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-              dom.insertBoundary(fragment, 0);
-              dom.insertBoundary(fragment, null);
-              return morphs;
-            },
-            statements: [["content", "model.car.number", ["loc", [null, [1, 850], [1, 870]]]]],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child3 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 870
-                },
-                "end": {
-                  "line": 1,
-                  "column": 918
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("span");
-              dom.setAttribute(el1, "class", "text-warning");
-              var el2 = dom.createTextNode("该车辆已闲置");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes() {
-              return [];
-            },
-            statements: [],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child4 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 1115
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1149
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createComment("");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-              dom.insertBoundary(fragment, 0);
-              dom.insertBoundary(fragment, null);
-              return morphs;
-            },
-            statements: [["content", "model.car.vin", ["loc", [null, [1, 1132], [1, 1149]]]]],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child5 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 1149
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1197
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("span");
-              dom.setAttribute(el1, "class", "text-warning");
-              var el2 = dom.createTextNode("该车辆已闲置");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes() {
-              return [];
-            },
-            statements: [],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child6 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 1219
-                },
-                "end": {
-                  "line": 1,
-                  "column": 1531
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("li");
-              dom.setAttribute(el1, "class", "list-group-item form-group");
-              var el2 = dom.createElement("label");
-              dom.setAttribute(el2, "for", "car_vin");
-              dom.setAttribute(el2, "class", "control-label col-md-2 col-sm-12");
-              var el3 = dom.createTextNode("有效期");
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "col-md-8 col-sm-12");
-              var el3 = dom.createElement("p");
-              dom.setAttribute(el3, "class", "form-control-static");
-              var el4 = dom.createComment("");
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1, 0]), 0, 0);
-              return morphs;
-            },
-            statements: [["inline", "date-picker-value", [], ["startDate", ["subexpr", "@mut", [["get", "model.instance.start_date", ["loc", [null, [1, 1457], [1, 1482]]]]], [], []], "endDate", ["subexpr", "@mut", [["get", "model.instance.end_date", ["loc", [null, [1, 1491], [1, 1514]]]]], [], []]], ["loc", [null, [1, 1427], [1, 1516]]]]],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child7 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 2778
-                },
-                "end": {
-                  "line": 1,
-                  "column": 2810
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createComment("");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-              dom.insertBoundary(fragment, 0);
-              dom.insertBoundary(fragment, null);
-              return morphs;
-            },
-            statements: [["content", "model.rate", ["loc", [null, [1, 2796], [1, 2810]]]]],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child8 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 2810
-                },
-                "end": {
-                  "line": 1,
-                  "column": 2913
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("span");
-              dom.setAttribute(el1, "class", "margin-right");
-              var el2 = dom.createComment("");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              var el1 = dom.createElement("span");
-              dom.setAttribute(el1, "class", "text-warning");
-              var el2 = dom.createTextNode("[第一次加油油耗无法计算]");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
-              return morphs;
-            },
-            statements: [["content", "model.rate", ["loc", [null, [1, 2845], [1, 2859]]]]],
-            locals: [],
-            templates: []
-          };
-        })();
-        var child9 = (function () {
-          return {
-            meta: {
-              "revision": "Ember@1.13.11",
-              "loc": {
-                "source": null,
-                "start": {
-                  "line": 1,
-                  "column": 3353
-                },
-                "end": {
-                  "line": 1,
-                  "column": 3602
-                }
-              },
-              "moduleName": "htis/templates/start/bill.hbs"
-            },
-            arity: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            buildFragment: function buildFragment(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createElement("li");
-              dom.setAttribute(el1, "class", "list-group-item form-group");
-              var el2 = dom.createElement("label");
-              dom.setAttribute(el2, "for", "signature");
-              dom.setAttribute(el2, "class", "control-label col-md-2 col-sm-12");
-              var el3 = dom.createTextNode("签字");
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("div");
-              dom.setAttribute(el2, "class", "col-md-8 col-sm-12");
-              var el3 = dom.createElement("p");
-              dom.setAttribute(el3, "class", "form-control-static");
-              var el4 = dom.createComment("");
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-              var morphs = new Array(1);
-              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1, 0]), 0, 0);
-              return morphs;
-            },
-            statements: [["inline", "base64-img", [["get", "model.signature.sign", ["loc", [null, [1, 3565], [1, 3585]]]]], [], ["loc", [null, [1, 3552], [1, 3587]]]]],
-            locals: [],
-            templates: []
-          };
-        })();
-        return {
-          meta: {
-            "revision": "Ember@1.13.11",
-            "loc": {
-              "source": null,
-              "start": {
-                "line": 1,
-                "column": 85
-              },
-              "end": {
-                "line": 1,
-                "column": 3614
-              }
-            },
-            "moduleName": "htis/templates/start/bill.hbs"
-          },
-          arity: 0,
-          cachedFragment: null,
-          hasRendered: false,
-          buildFragment: function buildFragment(dom) {
-            var el0 = dom.createDocumentFragment();
-            var el1 = dom.createElement("ul");
-            dom.setAttribute(el1, "class", "list-group list-full form-horizontal");
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "id");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("单号");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "car_number");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("车辆编号");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "car_vin");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("VIN");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createComment("");
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "car_vin");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("所属项目");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "car_vin");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("使用部门");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "oil");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("油品");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "volume");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("加油量");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "mileage");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("里程数");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "rate");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("油耗");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "oiler");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("加油工");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createElement("li");
-            dom.setAttribute(el2, "class", "list-group-item form-group");
-            var el3 = dom.createElement("label");
-            dom.setAttribute(el3, "for", "time");
-            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
-            var el4 = dom.createTextNode("加油时间");
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            var el3 = dom.createElement("div");
-            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
-            var el4 = dom.createElement("p");
-            dom.setAttribute(el4, "class", "form-control-static");
-            var el5 = dom.createComment("");
-            dom.appendChild(el4, el5);
-            dom.appendChild(el3, el4);
-            dom.appendChild(el2, el3);
-            dom.appendChild(el1, el2);
-            var el2 = dom.createComment("");
-            dom.appendChild(el1, el2);
-            dom.appendChild(el0, el1);
-            return el0;
-          },
-          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-            var element0 = dom.childAt(fragment, [0]);
-            var element1 = dom.childAt(element0, [0, 1, 0]);
-            var element2 = dom.childAt(element0, [9, 1, 0]);
-            var morphs = new Array(17);
-            morphs[0] = dom.createAttrMorph(element1, 'class');
-            morphs[1] = dom.createMorphAt(element1, 0, 0);
-            morphs[2] = dom.createMorphAt(element1, 1, 1);
-            morphs[3] = dom.createMorphAt(element1, 2, 2);
-            morphs[4] = dom.createMorphAt(dom.childAt(element0, [1, 1, 0]), 0, 0);
-            morphs[5] = dom.createMorphAt(dom.childAt(element0, [2, 1, 0]), 0, 0);
-            morphs[6] = dom.createMorphAt(element0, 3, 3);
-            morphs[7] = dom.createMorphAt(dom.childAt(element0, [4, 1, 0]), 0, 0);
-            morphs[8] = dom.createMorphAt(dom.childAt(element0, [5, 1, 0]), 0, 0);
-            morphs[9] = dom.createMorphAt(dom.childAt(element0, [6, 1, 0]), 0, 0);
-            morphs[10] = dom.createMorphAt(dom.childAt(element0, [7, 1, 0]), 0, 0);
-            morphs[11] = dom.createMorphAt(dom.childAt(element0, [8, 1, 0]), 0, 0);
-            morphs[12] = dom.createAttrMorph(element2, 'class');
-            morphs[13] = dom.createMorphAt(element2, 0, 0);
-            morphs[14] = dom.createMorphAt(dom.childAt(element0, [10, 1, 0]), 0, 0);
-            morphs[15] = dom.createMorphAt(dom.childAt(element0, [11, 1, 0]), 0, 0);
-            morphs[16] = dom.createMorphAt(element0, 12, 12);
-            return morphs;
-          },
-          statements: [["attribute", "class", ["concat", ["form-control-static ", ["subexpr", "if", [["get", "model.is_lost", ["loc", [null, [1, 370], [1, 383]]]], "text-danger"], [], ["loc", [null, [1, 365], [1, 399]]]]]]], ["content", "model.id", ["loc", [null, [1, 401], [1, 413]]]], ["block", "if", [["get", "model.is_lost", ["loc", [null, [1, 419], [1, 432]]]]], [], 0, null, ["loc", [null, [1, 413], [1, 518]]]], ["block", "unless", [["get", "model.creater.is_sign_needed", ["loc", [null, [1, 528], [1, 556]]]]], [], 1, null, ["loc", [null, [1, 518], [1, 639]]]], ["block", "if", [["get", "model.car", ["loc", [null, [1, 839], [1, 848]]]]], [], 2, 3, ["loc", [null, [1, 833], [1, 925]]]], ["block", "if", [["get", "model.car", ["loc", [null, [1, 1121], [1, 1130]]]]], [], 4, 5, ["loc", [null, [1, 1115], [1, 1204]]]], ["block", "if", [["get", "model.instance.start_date", ["loc", [null, [1, 1225], [1, 1250]]]]], [], 6, null, ["loc", [null, [1, 1219], [1, 1538]]]], ["content", "model.project.name", ["loc", [null, [1, 1714], [1, 1736]]]], ["content", "model.department.name", ["loc", [null, [1, 1927], [1, 1952]]]], ["content", "model.oil.name", ["loc", [null, [1, 2137], [1, 2155]]]], ["content", "model.volume", ["loc", [null, [1, 2344], [1, 2360]]]], ["content", "model.mileage", ["loc", [null, [1, 2550], [1, 2567]]]], ["attribute", "class", ["concat", ["form-control-static text-", ["get", "model.rateColor", ["loc", [null, [1, 2759], [1, 2774]]]]]]], ["block", "if", [["get", "model.rate", ["loc", [null, [1, 2784], [1, 2794]]]]], [], 7, 8, ["loc", [null, [1, 2778], [1, 2920]]]], ["content", "model.oiler.name", ["loc", [null, [1, 3108], [1, 3128]]]], ["inline", "timefmt", [["get", "model.time", ["loc", [null, [1, 3326], [1, 3336]]]]], [], ["loc", [null, [1, 3316], [1, 3338]]]], ["block", "if", [["get", "model.signature", ["loc", [null, [1, 3359], [1, 3374]]]]], [], 9, null, ["loc", [null, [1, 3353], [1, 3609]]]]],
-          locals: [],
-          templates: [child0, child1, child2, child3, child4, child5, child6, child7, child8, child9]
-        };
-      })();
-      return {
-        meta: {
-          "revision": "Ember@1.13.11",
-          "loc": {
-            "source": null,
-            "start": {
-              "line": 1,
-              "column": 0
-            },
-            "end": {
-              "line": 1,
-              "column": 3631
-            }
-          },
-          "moduleName": "htis/templates/start/bill.hbs"
-        },
-        arity: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        buildFragment: function buildFragment(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createComment("");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-          var morphs = new Array(1);
-          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-          dom.insertBoundary(fragment, 0);
-          dom.insertBoundary(fragment, null);
-          return morphs;
-        },
-        statements: [["block", "detail-panel", [], ["pannelTitle", ["subexpr", "@mut", [["get", "pannelTitle", ["loc", [null, [1, 113], [1, 124]]]]], [], []], "class", "panel-primary"], 0, null, ["loc", [null, [1, 85], [1, 3631]]]]],
-        locals: [],
-        templates: [child0]
-      };
-    })();
-    return {
-      meta: {
-        "revision": "Ember@1.13.11",
-        "loc": {
-          "source": null,
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 1,
-            "column": 3660
-          }
-        },
-        "moduleName": "htis/templates/start/bill.hbs"
-      },
-      arity: 0,
-      cachedFragment: null,
-      hasRendered: false,
-      buildFragment: function buildFragment(dom) {
-        var el0 = dom.createDocumentFragment();
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createComment("");
-        dom.appendChild(el0, el1);
-        return el0;
-      },
-      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
-        var morphs = new Array(2);
-        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
-        morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
-        dom.insertBoundary(fragment, 0);
-        dom.insertBoundary(fragment, null);
-        return morphs;
-      },
-      statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 28], [1, 37]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 47], [1, 55]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 63], [1, 69]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 77], [1, 83]]]]], [], []]], 0, null, ["loc", [null, [1, 0], [1, 3650]]]], ["content", "outlet", ["loc", [null, [1, 3650], [1, 3660]]]]],
-      locals: [],
-      templates: [child0]
-    };
-  })());
-});
 define("htis/templates/start", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -44871,6 +44149,740 @@ define("htis/templates/start", ["exports"], function (exports) {
     };
   })());
 });
+define("htis/templates/start/bill", ["exports"], function (exports) {
+  exports["default"] = Ember.HTMLBars.template((function () {
+    var child0 = (function () {
+      var child0 = (function () {
+        var child0 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 413
+                },
+                "end": {
+                  "line": 1,
+                  "column": 511
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1, "class", "glyphicon glyphicon-warning-sign text-danger pull-right");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes() {
+              return [];
+            },
+            statements: [],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child1 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 518
+                },
+                "end": {
+                  "line": 1,
+                  "column": 628
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1, "class", "glyphicon glyphicon-pawn text-success pull-right");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes() {
+              return [];
+            },
+            statements: [],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child2 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 833
+                },
+                "end": {
+                  "line": 1,
+                  "column": 870
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+              dom.insertBoundary(fragment, 0);
+              dom.insertBoundary(fragment, null);
+              return morphs;
+            },
+            statements: [["content", "model.car.number", ["loc", [null, [1, 850], [1, 870]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child3 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 870
+                },
+                "end": {
+                  "line": 1,
+                  "column": 918
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1, "class", "text-warning");
+              var el2 = dom.createTextNode("该车辆已闲置");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes() {
+              return [];
+            },
+            statements: [],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child4 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 1115
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1149
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+              dom.insertBoundary(fragment, 0);
+              dom.insertBoundary(fragment, null);
+              return morphs;
+            },
+            statements: [["content", "model.car.vin", ["loc", [null, [1, 1132], [1, 1149]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child5 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 1149
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1197
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1, "class", "text-warning");
+              var el2 = dom.createTextNode("该车辆已闲置");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes() {
+              return [];
+            },
+            statements: [],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child6 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 1219
+                },
+                "end": {
+                  "line": 1,
+                  "column": 1531
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("li");
+              dom.setAttribute(el1, "class", "list-group-item form-group");
+              var el2 = dom.createElement("label");
+              dom.setAttribute(el2, "for", "car_vin");
+              dom.setAttribute(el2, "class", "control-label col-md-2 col-sm-12");
+              var el3 = dom.createTextNode("有效期");
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "col-md-8 col-sm-12");
+              var el3 = dom.createElement("p");
+              dom.setAttribute(el3, "class", "form-control-static");
+              var el4 = dom.createComment("");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1, 0]), 0, 0);
+              return morphs;
+            },
+            statements: [["inline", "date-picker-value", [], ["startDate", ["subexpr", "@mut", [["get", "model.instance.start_date", ["loc", [null, [1, 1457], [1, 1482]]]]], [], []], "endDate", ["subexpr", "@mut", [["get", "model.instance.end_date", ["loc", [null, [1, 1491], [1, 1514]]]]], [], []]], ["loc", [null, [1, 1427], [1, 1516]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child7 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 2778
+                },
+                "end": {
+                  "line": 1,
+                  "column": 2810
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+              dom.insertBoundary(fragment, 0);
+              dom.insertBoundary(fragment, null);
+              return morphs;
+            },
+            statements: [["content", "model.rate", ["loc", [null, [1, 2796], [1, 2810]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child8 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 2810
+                },
+                "end": {
+                  "line": 1,
+                  "column": 2913
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1, "class", "margin-right");
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1, "class", "text-warning");
+              var el2 = dom.createTextNode("[第一次加油油耗无法计算]");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0]), 0, 0);
+              return morphs;
+            },
+            statements: [["content", "model.rate", ["loc", [null, [1, 2845], [1, 2859]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        var child9 = (function () {
+          return {
+            meta: {
+              "revision": "Ember@1.13.11",
+              "loc": {
+                "source": null,
+                "start": {
+                  "line": 1,
+                  "column": 3353
+                },
+                "end": {
+                  "line": 1,
+                  "column": 3602
+                }
+              },
+              "moduleName": "htis/templates/start/bill.hbs"
+            },
+            arity: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            buildFragment: function buildFragment(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createElement("li");
+              dom.setAttribute(el1, "class", "list-group-item form-group");
+              var el2 = dom.createElement("label");
+              dom.setAttribute(el2, "for", "signature");
+              dom.setAttribute(el2, "class", "control-label col-md-2 col-sm-12");
+              var el3 = dom.createTextNode("签字");
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2, "class", "col-md-8 col-sm-12");
+              var el3 = dom.createElement("p");
+              dom.setAttribute(el3, "class", "form-control-static");
+              var el4 = dom.createComment("");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+              var morphs = new Array(1);
+              morphs[0] = dom.createMorphAt(dom.childAt(fragment, [0, 1, 0]), 0, 0);
+              return morphs;
+            },
+            statements: [["inline", "base64-img", [["get", "model.signature.sign", ["loc", [null, [1, 3565], [1, 3585]]]]], [], ["loc", [null, [1, 3552], [1, 3587]]]]],
+            locals: [],
+            templates: []
+          };
+        })();
+        return {
+          meta: {
+            "revision": "Ember@1.13.11",
+            "loc": {
+              "source": null,
+              "start": {
+                "line": 1,
+                "column": 85
+              },
+              "end": {
+                "line": 1,
+                "column": 3614
+              }
+            },
+            "moduleName": "htis/templates/start/bill.hbs"
+          },
+          arity: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          buildFragment: function buildFragment(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createElement("ul");
+            dom.setAttribute(el1, "class", "list-group list-full form-horizontal");
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "id");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("单号");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "car_number");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("车辆编号");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "car_vin");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("VIN");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "car_vin");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("所属项目");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "car_vin");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("使用部门");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "oil");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("油品");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "volume");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("加油量");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "mileage");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("里程数");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "rate");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("油耗");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "oiler");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("加油工");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("li");
+            dom.setAttribute(el2, "class", "list-group-item form-group");
+            var el3 = dom.createElement("label");
+            dom.setAttribute(el3, "for", "time");
+            dom.setAttribute(el3, "class", "control-label col-md-2 col-sm-12");
+            var el4 = dom.createTextNode("加油时间");
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("div");
+            dom.setAttribute(el3, "class", "col-md-8 col-sm-12");
+            var el4 = dom.createElement("p");
+            dom.setAttribute(el4, "class", "form-control-static");
+            var el5 = dom.createComment("");
+            dom.appendChild(el4, el5);
+            dom.appendChild(el3, el4);
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+            var element0 = dom.childAt(fragment, [0]);
+            var element1 = dom.childAt(element0, [0, 1, 0]);
+            var element2 = dom.childAt(element0, [9, 1, 0]);
+            var morphs = new Array(17);
+            morphs[0] = dom.createAttrMorph(element1, 'class');
+            morphs[1] = dom.createMorphAt(element1, 0, 0);
+            morphs[2] = dom.createMorphAt(element1, 1, 1);
+            morphs[3] = dom.createMorphAt(element1, 2, 2);
+            morphs[4] = dom.createMorphAt(dom.childAt(element0, [1, 1, 0]), 0, 0);
+            morphs[5] = dom.createMorphAt(dom.childAt(element0, [2, 1, 0]), 0, 0);
+            morphs[6] = dom.createMorphAt(element0, 3, 3);
+            morphs[7] = dom.createMorphAt(dom.childAt(element0, [4, 1, 0]), 0, 0);
+            morphs[8] = dom.createMorphAt(dom.childAt(element0, [5, 1, 0]), 0, 0);
+            morphs[9] = dom.createMorphAt(dom.childAt(element0, [6, 1, 0]), 0, 0);
+            morphs[10] = dom.createMorphAt(dom.childAt(element0, [7, 1, 0]), 0, 0);
+            morphs[11] = dom.createMorphAt(dom.childAt(element0, [8, 1, 0]), 0, 0);
+            morphs[12] = dom.createAttrMorph(element2, 'class');
+            morphs[13] = dom.createMorphAt(element2, 0, 0);
+            morphs[14] = dom.createMorphAt(dom.childAt(element0, [10, 1, 0]), 0, 0);
+            morphs[15] = dom.createMorphAt(dom.childAt(element0, [11, 1, 0]), 0, 0);
+            morphs[16] = dom.createMorphAt(element0, 12, 12);
+            return morphs;
+          },
+          statements: [["attribute", "class", ["concat", ["form-control-static ", ["subexpr", "if", [["get", "model.is_lost", ["loc", [null, [1, 370], [1, 383]]]], "text-danger"], [], ["loc", [null, [1, 365], [1, 399]]]]]]], ["content", "model.id", ["loc", [null, [1, 401], [1, 413]]]], ["block", "if", [["get", "model.is_lost", ["loc", [null, [1, 419], [1, 432]]]]], [], 0, null, ["loc", [null, [1, 413], [1, 518]]]], ["block", "unless", [["get", "model.creater.is_sign_needed", ["loc", [null, [1, 528], [1, 556]]]]], [], 1, null, ["loc", [null, [1, 518], [1, 639]]]], ["block", "if", [["get", "model.car", ["loc", [null, [1, 839], [1, 848]]]]], [], 2, 3, ["loc", [null, [1, 833], [1, 925]]]], ["block", "if", [["get", "model.car", ["loc", [null, [1, 1121], [1, 1130]]]]], [], 4, 5, ["loc", [null, [1, 1115], [1, 1204]]]], ["block", "if", [["get", "model.instance.start_date", ["loc", [null, [1, 1225], [1, 1250]]]]], [], 6, null, ["loc", [null, [1, 1219], [1, 1538]]]], ["content", "model.project.name", ["loc", [null, [1, 1714], [1, 1736]]]], ["content", "model.department.name", ["loc", [null, [1, 1927], [1, 1952]]]], ["content", "model.oil.name", ["loc", [null, [1, 2137], [1, 2155]]]], ["content", "model.volume", ["loc", [null, [1, 2344], [1, 2360]]]], ["content", "model.mileage", ["loc", [null, [1, 2550], [1, 2567]]]], ["attribute", "class", ["concat", ["form-control-static text-", ["get", "model.rateColor", ["loc", [null, [1, 2759], [1, 2774]]]]]]], ["block", "if", [["get", "model.rate", ["loc", [null, [1, 2784], [1, 2794]]]]], [], 7, 8, ["loc", [null, [1, 2778], [1, 2920]]]], ["content", "model.oiler.name", ["loc", [null, [1, 3108], [1, 3128]]]], ["inline", "timefmt", [["get", "model.time", ["loc", [null, [1, 3326], [1, 3336]]]]], [], ["loc", [null, [1, 3316], [1, 3338]]]], ["block", "if", [["get", "model.signature", ["loc", [null, [1, 3359], [1, 3374]]]]], [], 9, null, ["loc", [null, [1, 3353], [1, 3609]]]]],
+          locals: [],
+          templates: [child0, child1, child2, child3, child4, child5, child6, child7, child8, child9]
+        };
+      })();
+      return {
+        meta: {
+          "revision": "Ember@1.13.11",
+          "loc": {
+            "source": null,
+            "start": {
+              "line": 1,
+              "column": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 3631
+            }
+          },
+          "moduleName": "htis/templates/start/bill.hbs"
+        },
+        arity: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        buildFragment: function buildFragment(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+          var morphs = new Array(1);
+          morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+          dom.insertBoundary(fragment, 0);
+          dom.insertBoundary(fragment, null);
+          return morphs;
+        },
+        statements: [["block", "detail-panel", [], ["pannelTitle", ["subexpr", "@mut", [["get", "pannelTitle", ["loc", [null, [1, 113], [1, 124]]]]], [], []], "class", "panel-primary"], 0, null, ["loc", [null, [1, 85], [1, 3631]]]]],
+        locals: [],
+        templates: [child0]
+      };
+    })();
+    return {
+      meta: {
+        "revision": "Ember@1.13.11",
+        "loc": {
+          "source": null,
+          "start": {
+            "line": 1,
+            "column": 0
+          },
+          "end": {
+            "line": 1,
+            "column": 3660
+          }
+        },
+        "moduleName": "htis/templates/start/bill.hbs"
+      },
+      arity: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      buildFragment: function buildFragment(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      buildRenderNodes: function buildRenderNodes(dom, fragment, contextualElement) {
+        var morphs = new Array(2);
+        morphs[0] = dom.createMorphAt(fragment, 0, 0, contextualElement);
+        morphs[1] = dom.createMorphAt(fragment, 1, 1, contextualElement);
+        dom.insertBoundary(fragment, 0);
+        dom.insertBoundary(fragment, null);
+        return morphs;
+      },
+      statements: [["block", "navigable-pane", [], ["routeName", ["subexpr", "@mut", [["get", "routeName", ["loc", [null, [1, 28], [1, 37]]]]], [], []], "isActive", ["subexpr", "@mut", [["get", "isActive", ["loc", [null, [1, 47], [1, 55]]]]], [], []], "isBack", ["subexpr", "@mut", [["get", "isBack", ["loc", [null, [1, 63], [1, 69]]]]], [], []], "isHide", ["subexpr", "@mut", [["get", "isHide", ["loc", [null, [1, 77], [1, 83]]]]], [], []]], 0, null, ["loc", [null, [1, 0], [1, 3650]]]], ["content", "outlet", ["loc", [null, [1, 3650], [1, 3660]]]]],
+      locals: [],
+      templates: [child0]
+    };
+  })());
+});
 define("htis/templates/startup", ["exports"], function (exports) {
   exports["default"] = Ember.HTMLBars.template((function () {
     var child0 = (function () {
@@ -45222,7 +45234,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("htis/app")["default"].create({"LOG_RESOLVER":false,"LOG_ACTIVE_GENERATION":false,"LOG_TRANSITIONS":false,"LOG_TRANSITIONS_INTERNAL":false,"LOG_VIEW_LOOKUPS":false,"name":"htis","version":"0.0.0+"});
+  require("htis/app")["default"].create({"LOG_RESOLVER":false,"LOG_ACTIVE_GENERATION":false,"LOG_TRANSITIONS":false,"LOG_TRANSITIONS_INTERNAL":false,"LOG_VIEW_LOOKUPS":false,"name":"htis","version":"0.0.0+3d987bec"});
 }
 
 /* jshint ignore:end */

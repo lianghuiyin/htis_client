@@ -506,7 +506,7 @@ button .glyphicon.right-icon {
       border: none;
       -webkit-box-shadow: none;
       box-shadow: none;
-      line-height: 20px \9; }
+      line-height/*\**/: 20px \9; }
     .list-group .list-group-item.form-group.input-border-box {
       border: none; }
       .list-group .list-group-item.form-group.input-border-box input.form-control {

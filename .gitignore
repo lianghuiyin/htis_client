@@ -4,5 +4,6 @@
 **/tmp/*
 **/.npm/*
 **/.DS_Store/*
+**/dist/*
 
 .build

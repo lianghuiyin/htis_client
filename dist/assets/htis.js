@@ -45234,7 +45234,7 @@ catch(err) {
 });
 
 if (!runningTests) {
-  require("htis/app")["default"].create({"LOG_RESOLVER":false,"LOG_ACTIVE_GENERATION":false,"LOG_TRANSITIONS":false,"LOG_TRANSITIONS_INTERNAL":false,"LOG_VIEW_LOOKUPS":false,"name":"htis","version":"0.0.0+3d987bec"});
+  require("htis/app")["default"].create({"LOG_RESOLVER":false,"LOG_ACTIVE_GENERATION":false,"LOG_TRANSITIONS":false,"LOG_TRANSITIONS_INTERNAL":false,"LOG_VIEW_LOOKUPS":false,"name":"htis","version":"0.0.0+cdd77241"});
 }
 
 /* jshint ignore:end */

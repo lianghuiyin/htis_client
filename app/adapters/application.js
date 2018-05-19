@@ -2,8 +2,8 @@ import DS from 'ember-data';
 
 export default DS.RESTAdapter.extend({
     // host:"http://192.168.0.99:86",
-	// namespace: 'server/api',
-	namespace: 'api',
+	namespace: 'server/api',
+	// namespace: 'api',
     shouldBackgroundReloadRecord: function () {
         return false;
     },

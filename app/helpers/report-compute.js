@@ -9,8 +9,9 @@ export function reportCompute([model],{project,oil,department}) {
 	}
 	let sum = 0;
 	reports.forEach(function(n){
-		sum += HOJS.lib.accAdd(sum, n.get("volume"))
+		sum = HOJS.lib.accAdd(sum, n.get("volume"));
 	});
+	sum = HOJS.lib.deci(sum,2);
 	return sum;
 }
 
